@@ -291,7 +291,7 @@ namespace NBXplorer.Backend
 				}
 				var node = await Node.ConnectAsync(network.NBitcoinNetwork, ChainConfiguration.NodeEndpoint, nodeParams);
 				Logger.LogInformation($"TCP Connection succeed, handshaking...");
-				node.VersionHandshake(handshakeTimeout.Token);
+				await node.VersionHandshakeAsync(handshakeTimeout.Token);
 				Logger.LogInformation($"Handshaked");
 				await node.SendMessageAsync(new SendHeadersPayload());
 

@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework Condition="'$(TargetFrameworkOverride)' == ''">net10.0</TargetFramework>
     <TargetFramework Condition="'$(TargetFrameworkOverride)' != ''">$(TargetFrameworkOverride)</TargetFramework>
-    <Version>2.6.7</Version>
+    <Version>2.6.8</Version>
 	  <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\NBXplorer.xml</DocumentationFile>
 	  <NoWarn>1701;1702;1705;1591;CS1591</NoWarn>
 	  <LangVersion>12</LangVersion>
@@ -35,12 +35,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.72" />
-    <PackageReference Include="Npgsql" Version="10.0.2" />
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
 	  <PackageReference Include="NicolasDorier.CommandLine" Version="2.0.0" />
 	  <PackageReference Include="NicolasDorier.CommandLine.Configuration" Version="2.0.0" />
 	<PackageReference Include="NicolasDorier.StandardConfiguration" Version="2.0.1" />
-	<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.6" />
+	<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.9" />
     <ProjectReference Include="..\NBXplorer.Client\NBXplorer.Client.csproj" />
   </ItemGroup>
 
