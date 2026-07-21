@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
 		<Company>Digital Garage</Company>
-		<Version>5.0.6</Version>
+		<Version>5.0.7</Version>
 		<Copyright>Copyright © Digital Garage 2017</Copyright>
 		<Description>Client API for the minimalist HD Wallet Tracker NBXplorer</Description>
 		<PackageIcon>Bitcoin.png</PackageIcon>
@@ -38,6 +38,6 @@
 	<None Include="Bitcoin.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.10" />
   </ItemGroup>
 </Project>

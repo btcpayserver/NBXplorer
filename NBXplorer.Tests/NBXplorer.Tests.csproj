@@ -11,7 +11,7 @@
     <EmbeddedResource Include="Scripts\generate-whale.sql" />
   </ItemGroup>
   <ItemGroup>
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.9" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.10" />
       <PackageReference Include="NBitcoin.TestFramework" Version="5.0.2" />
 	  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
 	  <PackageReference Include="xunit" Version="2.9.3" />
