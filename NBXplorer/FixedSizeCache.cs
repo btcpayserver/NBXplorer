@@ -55,9 +55,8 @@ namespace NBXplorer
 
 		private int GetIndex(TKey key)
 		{
-			if (object.ReferenceEquals(null, key))
-				throw new ArgumentNullException(paramName: nameof(key));
-			return Math.Abs(key.GetHashCode()) % _Elements.Length;
+			ArgumentNullException.ThrowIfNull(key);
+			return (int)((uint)key.GetHashCode() % (uint)_Elements.Length);
 		}
 	}
 }
