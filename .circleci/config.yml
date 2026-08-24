@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   test:
     machine:
-      image: ubuntu-2004:202201-02
+      image: ubuntu-2204:current
     steps:
       - checkout
       - run:
