@@ -2,7 +2,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/NBxplorer.Client.svg)](https://www.nuget.org/packages/NBxplorer.Client)
 [![Docker Automated buil](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/nicolasdorier/nbxplorer/)
-[![CircleCI](https://circleci.com/gh/btcpayserver/NBXplorer.svg?style=svg)](https://circleci.com/gh/btcpayserver/NBXplorer)
+[![CI](https://github.com/btcpayserver/NBXplorer/actions/workflows/ci.yml/badge.svg)](https://github.com/btcpayserver/NBXplorer/actions/workflows/ci.yml)
 
 A minimalist UTXO tracker for HD wallets.
 The goal is to provide a flexible, .NET-based UTXO tracker for HD wallets.

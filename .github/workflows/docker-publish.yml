@@ -1,0 +1,51 @@
+name: Docker Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  docker:
+    if: ${{ github.repository == 'btcpayserver/NBXplorer' && github.event_name == 'push' && github.ref_type == 'tag' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Prepare Docker tag
+        id: docker-tag
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_NAME}" =~ ^(v[1-9]+(\.[0-9]+)*(-[a-z0-9-]+)?|v[a-z0-9-]+)$ ]]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "latest_tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${GITHUB_REF_NAME} does not match the Docker publish tag pattern. Skipping."
+          fi
+
+      - name: Checkout
+        if: steps.docker-tag.outputs.publish == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        if: steps.docker-tag.outputs.publish == 'true'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: steps.docker-tag.outputs.publish == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: steps.docker-tag.outputs.publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      - name: Publish Docker image
+        if: steps.docker-tag.outputs.publish == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ secrets.DOCKERHUB_REPO }}:${{ steps.docker-tag.outputs.latest_tag }}
