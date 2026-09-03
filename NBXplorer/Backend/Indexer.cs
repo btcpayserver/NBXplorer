@@ -290,6 +290,8 @@ namespace NBXplorer.Backend
 					nodeParams.TemplateBehaviors.Add(socks);
 				}
 				var node = await Node.ConnectAsync(network.NBitcoinNetwork, ChainConfiguration.NodeEndpoint, nodeParams);
+				_Connection?.Dispose("Creating new connection");
+				_Connection = new Connection(node);
 				Logger.LogInformation($"TCP Connection succeed, handshaking...");
 				await node.VersionHandshakeAsync(handshakeTimeout.Token);
 				Logger.LogInformation($"Handshaked");
@@ -346,8 +348,6 @@ namespace NBXplorer.Backend
 				// Refresh the NetworkInfo that may have become different while it was synching.
 				NetworkInfo = await RPCClient.GetNetworkInfoAsync();
 
-				_Connection?.Dispose("Creating new connection");
-				_Connection = new Connection(node);
 				node.MessageReceived += Node_MessageReceived;
 				node.Disconnected += Node_Disconnected;
 				var locator = await AskNextHeaders(node, token);
