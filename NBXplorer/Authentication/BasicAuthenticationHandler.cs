@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -9,44 +12,71 @@ using System.Threading.Tasks;
 
 namespace NBXplorer.Authentication
 {
-	public class BasicAuthenticationHandler : AuthenticationHandler<BasicAuthenticationOptions>
+	public class BasicAuthenticationHandler(
+		IOptionsMonitor<BasicAuthenticationOptions> options,
+		ILoggerFactory logger,
+		UrlEncoder encoder)
+		: AuthenticationHandler<BasicAuthenticationOptions>(options, logger, encoder)
 	{
-		public BasicAuthenticationHandler(IOptionsMonitor<BasicAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
-		{
-		}
-
 		protected override Task<AuthenticateResult> HandleAuthenticateAsync()
 		{
-			var authHeader = (string)this.Request.Headers["Authorization"];
-
 			if(Options.Username == null)
 			{
-				var user = new GenericPrincipal(new GenericIdentity("Anonymous"), null);
-				var ticket = new AuthenticationTicket(user, new AuthenticationProperties(), "Basic");
+				var user = new GenericPrincipal(new GenericIdentity("Anonymous", Scheme.Name), null);
+				var ticket = new AuthenticationTicket(user, new AuthenticationProperties(), Scheme.Name);
 				return Task.FromResult(AuthenticateResult.Success(ticket));
 			}
 
-			if(!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
+			if(!Request.Headers.TryGetValue("Authorization", out var values))
+				return Task.FromResult(AuthenticateResult.NoResult());
+
+			if(values.Count != 1 ||
+			   !AuthenticationHeaderValue.TryParse(values[0], out var authorization) ||
+			   !authorization.Scheme.Equals(Scheme.Name, StringComparison.OrdinalIgnoreCase) ||
+			   string.IsNullOrWhiteSpace(authorization.Parameter))
+				return Task.FromResult(AuthenticateResult.Fail("Invalid Authorization header."));
+
+			string usernamePassword;
+			try
 			{
-				//Extract credentials
-				string encodedUsernamePassword = authHeader.Substring("Basic ".Length).Trim();
-				Encoding encoding = Encoding.GetEncoding("iso-8859-1");
-				string usernamePassword = encoding.GetString(Convert.FromBase64String(encodedUsernamePassword));
+				usernamePassword = Encoding.Latin1.GetString(Convert.FromBase64String(authorization.Parameter));
+			}
+			catch(FormatException)
+			{
+				return Task.FromResult(AuthenticateResult.Fail("Invalid Basic credentials."));
+			}
 
-				int seperatorIndex = usernamePassword.IndexOf(':');
+			int separatorIndex = usernamePassword.IndexOf(':');
+			if(separatorIndex < 0)
+				return Task.FromResult(AuthenticateResult.Fail("Invalid Basic credentials."));
 
-				var username = usernamePassword.Substring(0, seperatorIndex);
-				var password = usernamePassword.Substring(seperatorIndex + 1);
+			var username = usernamePassword.Substring(0, separatorIndex);
+			var password = usernamePassword.Substring(separatorIndex + 1);
 
-				if(username.Equals(Options.Username, StringComparison.OrdinalIgnoreCase) && password.Equals(Options.Password, StringComparison.OrdinalIgnoreCase))
-				{
-					var user = new GenericPrincipal(new GenericIdentity(Options.Username), null);
-					var ticket = new AuthenticationTicket(user, new AuthenticationProperties(), "Basic");
-					return Task.FromResult(AuthenticateResult.Success(ticket));
-				}
+			if(username.Equals(Options.Username, StringComparison.Ordinal) && PasswordEquals(password, Options.Password))
+			{
+				var user = new GenericPrincipal(new GenericIdentity(Options.Username, Scheme.Name), null);
+				var ticket = new AuthenticationTicket(user, new AuthenticationProperties(), Scheme.Name);
+				return Task.FromResult(AuthenticateResult.Success(ticket));
 			}
 
 			return Task.FromResult(AuthenticateResult.Fail("No valid user."));
+		}
+
+		protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+		{
+			Response.Headers.Append("WWW-Authenticate", Scheme.Name);
+			return base.HandleChallengeAsync(properties);
+		}
+
+		private static bool PasswordEquals(string password, string expectedPassword)
+		{
+			if(expectedPassword == null)
+				return false;
+
+			return CryptographicOperations.FixedTimeEquals(
+				SHA256.HashData(Encoding.UTF8.GetBytes(password)),
+				SHA256.HashData(Encoding.UTF8.GetBytes(expectedPassword)));
 		}
 	}
 }
