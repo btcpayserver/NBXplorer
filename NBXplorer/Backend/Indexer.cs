@@ -575,7 +575,11 @@ namespace NBXplorer.Backend
 		public async Task StopAsync(CancellationToken cancellationToken)
 		{
 			cts?.Cancel();
-			_Connection?.Dispose("NBXplorer stopping...");
+			var connection = _Connection;
+			connection?.Dispose("NBXplorer stopping...");
+			// NBitcoin uses foreground threads for P2P connections. Wait until they
+			// exit so they cannot keep the process alive after host shutdown.
+			connection?.Node.Disconnect();
 			if (_indexerLoop is not null)
 				await _indexerLoop;
 			if (_watchdogLoop is not null)
