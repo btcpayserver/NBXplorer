@@ -45,11 +45,12 @@ namespace NBXplorer.Tests
 		public async Task ChallengeAdvertisesBasicAuthentication()
 		{
 			var context = CreateContext();
+			context.Response.Headers.WWWAuthenticate = "Bearer";
 
 			await context.ChallengeAsync("Basic");
 
 			Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
-			Assert.Equal("Basic", context.Response.Headers.WWWAuthenticate);
+			Assert.Equal(new[] { "Bearer", "Basic" }, context.Response.Headers.WWWAuthenticate);
 		}
 
 		private static async Task<AuthenticateResult> Authenticate(string header)

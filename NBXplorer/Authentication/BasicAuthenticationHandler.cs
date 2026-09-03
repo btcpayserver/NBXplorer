@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -64,7 +65,7 @@ namespace NBXplorer.Authentication
 
 		protected override Task HandleChallengeAsync(AuthenticationProperties properties)
 		{
-			Response.Headers.WWWAuthenticate = Scheme.Name;
+			Response.Headers.Append("WWW-Authenticate", Scheme.Name);
 			return base.HandleChallengeAsync(properties);
 		}
 
