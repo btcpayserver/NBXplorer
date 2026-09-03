@@ -26,7 +26,7 @@ namespace NBXplorer.HostedServices
 
 		public async Task Do(CancellationToken cancellationToken)
 		{
-			await using var conn = await _DS.ReliableOpenConnectionAsync();
+			await using var conn = await _DS.ReliableOpenConnectionAsync(cancellationToken);
 			var command = new CommandDefinition(
 				commandText: "SELECT wallets_history_refresh();",
 				commandType: System.Data.CommandType.Text,

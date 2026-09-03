@@ -42,6 +42,8 @@ namespace NBXplorer.Tests
 		{
 			if (Host != null)
 			{
+				_ = Host.StopAsync();
+				Host.WaitForShutdown();
 				Host.Dispose();
 				Host = null;
 			}
