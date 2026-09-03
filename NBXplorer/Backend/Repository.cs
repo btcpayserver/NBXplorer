@@ -1211,7 +1211,7 @@ namespace NBXplorer.Backend
 		public async ValueTask<int> TrimmingEvents(int maxEvents, CancellationToken cancellationToken = default)
 		{
 			await using var ds = connectionFactory.CreateDataSourceBuilder(o => o.CommandTimeout = Constants.FifteenMinutes).Build();
-			await using var conn = await ds.ReliableOpenConnectionAsync();
+			await using var conn = await ds.ReliableOpenConnectionAsync(cancellationToken);
 			var id = await conn.ExecuteScalarAsync<long?>("SELECT id FROM nbxv1_evts WHERE code=@code ORDER BY id DESC OFFSET @maxEvents LIMIT 1", new { code = Network.CryptoCode, maxEvents = maxEvents - 1 });
 			if (id is long i)
 				return await conn.ExecuteAsync("DELETE FROM nbxv1_evts WHERE code=@code AND id < @id", new { code = Network.CryptoCode, id = i });

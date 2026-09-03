@@ -32,7 +32,7 @@ namespace NBXplorer.HostedServices
 			try
 			{
 				await using var ds = dsBuilder.Build();
-				using var conn = await ds.ReliableOpenConnectionAsync();
+				using var conn = await ds.ReliableOpenConnectionAsync(cancellationToken);
 				await RunScripts(conn);
 			}
 			catch (Npgsql.NpgsqlException pgex) when (pgex.SqlState == PostgresErrorCodes.InvalidCatalogName)
@@ -44,7 +44,7 @@ namespace NBXplorer.HostedServices
 					Logger.LogInformation($"Database '{dbname}' doesn't exists, creating it...");
 					b.Database = null;
 				}).Build();
-				using var conn = await ds.ReliableOpenConnectionAsync();
+				using var conn = await ds.ReliableOpenConnectionAsync(cancellationToken);
 				await conn.ExecuteAsync($"CREATE DATABASE {dbname} TEMPLATE 'template0' LC_CTYPE 'C' LC_COLLATE 'C' ENCODING 'UTF8'");
 				goto retry;
 			}
