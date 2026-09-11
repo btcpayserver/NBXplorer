@@ -33,6 +33,22 @@ namespace NBXplorer.Controllers
 	[Authorize]
 	public partial class MainController : Controller
 	{
+		internal const int MaxBroadcastParents = 100;
+
+		internal static bool ShouldRecoverMissingInputs(RPCErrorCode rpcCode)
+		{
+			return rpcCode == RPCErrorCode.RPC_VERIFY_ERROR;
+		}
+
+		internal static HashSet<uint256> GetBroadcastParentIds(Transaction tx)
+		{
+			return tx.Inputs
+				.Select(input => input.PrevOut.Hash)
+				.Distinct()
+				.Take(MaxBroadcastParents)
+				.ToHashSet();
+		}
+
 		public NBXplorerNetworkProvider NetworkProvider { get; }
 		public RPCClientProvider RPCClients { get; }
 		public RepositoryProvider RepositoryProvider { get; }
@@ -904,21 +920,35 @@ namespace NBXplorer.Controllers
 			{
 				rpcEx = ex;
 				Logs.Explorer.LogInformation($"{network.CryptoCode}: Transaction {tx.GetHash()} failed to broadcast (Code: {ex.RPCCode}, Message: {ex.RPCCodeMessage}, Details: {ex.Message} )");
-				if (trackedSourceContext.TrackedSource != null && ex.Message.StartsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
+				if (trackedSourceContext.TrackedSource != null && ShouldRecoverMissingInputs(ex.RPCCode))
 				{
-					Logs.Explorer.LogInformation($"{network.CryptoCode}: Trying to broadcast unconfirmed of the wallet");
-					var transactions = await GetAnnotatedTransactions(repo, GetTransactionQuery.Create(trackedSourceContext.TrackedSource), true);
-					foreach (var existing in transactions.UnconfirmedTransactions)
+					var parentIds = GetBroadcastParentIds(tx);
+					var transactions = await repo.GetTransactions(GetTransactionQuery.Create(trackedSourceContext.TrackedSource, parentIds.ToArray()), true);
+					var parents = transactions
+						.Where(existing => existing.BlockHash == null)
+						.ToList();
+					Logs.Explorer.LogInformation($"{network.CryptoCode}: Trying to broadcast {parents.Count} unconfirmed direct parents of transaction {tx.GetHash()}");
+					var foundParent = false;
+					foreach (var existing in parents)
 					{
-						var t = existing.Record.Transaction ?? (await repo.GetSavedTransaction(existing.Record.TransactionHash))?.Transaction;
+						var t = existing.Transaction ?? (await repo.GetSavedTransaction(existing.TransactionHash))?.Transaction;
 						if (t == null)
 							continue;
+						foundParent = true;
 						try
 						{
 							await trackedSourceContext.RpcClient.SendRawTransactionAsync(t);
 						}
 						catch { }
 					}
+
+					if (!foundParent)
+						return new BroadcastResult(false)
+						{
+							RPCCode = rpcEx.RPCCode,
+							RPCCodeMessage = rpcEx.RPCCodeMessage,
+							RPCMessage = rpcEx.Message
+						};
 
 					try
 					{

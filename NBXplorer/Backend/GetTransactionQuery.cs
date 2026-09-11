@@ -11,6 +11,7 @@ namespace NBXplorer.Backend
 	public abstract record GetTransactionQuery
 	{
 		public static TrackedSourceTxId Create(TrackedSource TrackedSource, uint256? TxId = null, DateTimeOffset? from = null, DateTimeOffset? to = null) => new TrackedSourceTxId(TrackedSource, TxId, from, to);
+		public static TrackedSourceTxIds Create(TrackedSource TrackedSource, uint256[] TxIds) => new TrackedSourceTxIds(TrackedSource, TxIds);
 		public static ScriptsTxIds Create(KeyPathInformation[] KeyInfos, uint256[] TxIds) => new ScriptsTxIds(KeyInfos, TxIds);
 		public record TrackedSourceTxId(TrackedSource TrackedSource, uint256? TxId, DateTimeOffset? From, DateTimeOffset? To) : GetTransactionQuery
 		{
@@ -43,6 +44,27 @@ namespace NBXplorer.Backend
 				WHERE code=@code AND wallet_id=@walletId{txIdCond}{fromCond}{toCond}
 				""";
 			}
+			public override TrackedSource? GetTrackedSource(string wallet_id) => walletId == wallet_id ? TrackedSource : null;
+		}
+
+		public record TrackedSourceTxIds(TrackedSource TrackedSource, uint256[] TxIds) : GetTransactionQuery
+		{
+			string? walletId;
+			public override string GetSql(DynamicParameters parameters, NBXplorerNetwork network)
+			{
+				walletId = Repository.GetWalletKey(TrackedSource, network).wid;
+				parameters.Add("@walletId", walletId);
+				parameters.Add("@code", network.CryptoCode);
+				parameters.Add("@tx_ids", TxIds.Select(t => t.ToString()).ToArray());
+
+				return """
+				SELECT wallet_id, t.tx_id, idx, blk_id, blk_height, blk_idx, is_out, spent_tx_id, spent_idx, script, s.addr, value, asset_id, immature, keypath, key_idx, seen_at, feature
+				FROM nbxv1_tracked_txs LEFT JOIN scripts s USING (code, script)
+				JOIN unnest(@tx_ids) t(tx_id) USING (tx_id)
+				WHERE code=@code AND wallet_id=@walletId
+				""";
+			}
+
 			public override TrackedSource? GetTrackedSource(string wallet_id) => walletId == wallet_id ? TrackedSource : null;
 		}
 
