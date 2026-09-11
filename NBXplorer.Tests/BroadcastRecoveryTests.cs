@@ -52,7 +52,6 @@ namespace NBXplorer.Tests
 			await tester.Client.TrackAsync(strategy);
 			var firstId = tester.SendToAddress(tester.AddressOf(key, "0/0"), Money.Satoshis(10_000));
 			var secondId = tester.SendToAddress(tester.AddressOf(key, "0/1"), Money.Satoshis(20_000));
-			tester.Notifications.WaitForTransaction(strategy, firstId);
 			tester.Notifications.WaitForTransaction(strategy, secondId);
 
 			var repository = tester.GetService<RepositoryProvider>().GetRepository(tester.Network.NetworkSet.CryptoCode);
