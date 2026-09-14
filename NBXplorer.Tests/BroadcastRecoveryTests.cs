@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
-using NBitcoin.RPC;
 using NBXplorer.Backend;
 using NBXplorer.Controllers;
 using NBXplorer.Models;
@@ -12,11 +11,11 @@ namespace NBXplorer.Tests
 	public class BroadcastRecoveryTests
 	{
 		[Fact]
-		public void MissingInputRecoveryUsesTheRpcErrorCode()
+		public void MissingInputRecoveryRequiresTheMissingInputsMessage()
 		{
-			Assert.True(MainController.ShouldRecoverMissingInputs(RPCErrorCode.RPC_VERIFY_ERROR));
-			Assert.False(MainController.ShouldRecoverMissingInputs(RPCErrorCode.RPC_VERIFY_REJECTED));
-			Assert.False(MainController.ShouldRecoverMissingInputs(RPCErrorCode.RPC_INVALID_PARAMETER));
+			Assert.True(MainController.ShouldRecoverMissingInputs("Missing inputs"));
+			Assert.True(MainController.ShouldRecoverMissingInputs("missing inputs: parent transaction not found"));
+			Assert.False(MainController.ShouldRecoverMissingInputs("Max fee exceeded"));
 		}
 
 		[Fact]
@@ -36,6 +35,38 @@ namespace NBXplorer.Tests
 			Assert.Equal(MainController.MaxBroadcastParents, selected.Count);
 			Assert.All(selected, parent => Assert.Contains(tx.Inputs, input => input.PrevOut.Hash == parent));
 			Assert.DoesNotContain(parents[^1], selected);
+		}
+
+		[Fact]
+		public void RecoveryOrdersAncestorsBeforeTheirChildren()
+		{
+			var grandparent = Network.RegTest.CreateTransaction();
+			grandparent.Outputs.Add(Money.Satoshis(3_000), Script.Empty);
+			var parent = Network.RegTest.CreateTransaction();
+			parent.Inputs.Add(new TxIn(new OutPoint(grandparent.GetHash(), 0)));
+			parent.Outputs.Add(Money.Satoshis(2_000), Script.Empty);
+
+			var ordered = MainController.OrderBroadcastParents(new[] { parent, grandparent });
+
+			Assert.Equal(new[] { grandparent.GetHash(), parent.GetHash() }, ordered.Select(t => t.GetHash()));
+		}
+
+		[Fact]
+		public async Task RecoveryWalksTheBoundedAncestorClosure()
+		{
+			var grandparent = Network.RegTest.CreateTransaction();
+			grandparent.Outputs.Add(Money.Satoshis(3_000), Script.Empty);
+			var parent = Network.RegTest.CreateTransaction();
+			parent.Inputs.Add(new TxIn(new OutPoint(grandparent.GetHash(), 0)));
+			parent.Outputs.Add(Money.Satoshis(2_000), Script.Empty);
+			var child = Network.RegTest.CreateTransaction();
+			child.Inputs.Add(new TxIn(new OutPoint(parent.GetHash(), 0)));
+			var available = new[] { grandparent, parent }.ToDictionary(t => t.GetHash());
+
+			var ordered = await MainController.GetBroadcastParents(child, ids =>
+				Task.FromResult(ids.Where(available.ContainsKey).Select(id => available[id])));
+
+			Assert.Equal(new[] { grandparent.GetHash(), parent.GetHash() }, ordered.Select(t => t.GetHash()));
 		}
 
 	}
