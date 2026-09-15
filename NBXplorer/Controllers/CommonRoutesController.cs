@@ -31,6 +31,22 @@ namespace NBXplorer.Controllers
 			AddressPoolService = addressPoolService;
 			ConnectionFactory = connectionFactory;
 		}
+
+		[HttpGet("addresses")]
+		public async Task<IActionResult> GetAddresses(TrackedSourceContext trackedSourceContext, int limit = 100, string continuation = null)
+		{
+			if (limit is < 1 or > 1000)
+				throw new NBXplorerError(400, "invalid-limit", "The address page size must be between 1 and 1000").AsException();
+			var rows = await trackedSourceContext.Repository.GetAddressesPage(
+				trackedSourceContext.TrackedSource, limit + 1, continuation, HttpContext.RequestAborted);
+			var page = rows.Take(limit).ToArray();
+			var response = new GetAddressesResponse
+			{
+				Addresses = page.Select(row => BitcoinAddress.Create(row.Address, trackedSourceContext.Network.NBitcoinNetwork)).ToArray(),
+				Continuation = rows.Length > limit ? page[^1].Script : null
+			};
+			return Json(response, trackedSourceContext.Network.Serializer.Settings);
+		}
 		
 		
 		[HttpGet("")]

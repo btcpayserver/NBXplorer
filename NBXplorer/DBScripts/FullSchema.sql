@@ -1241,6 +1241,8 @@ CREATE INDEX outs_unspent_idx ON outs USING btree (code) WHERE (((blk_id IS NOT 
 
 CREATE INDEX scripts_by_wallet_id_idx ON wallets_scripts USING btree (wallet_id);
 
+CREATE INDEX wallets_scripts_wallet_id_code_script_idx ON wallets_scripts USING btree (wallet_id, code, script);
+
 CREATE INDEX txs_by_blk_id ON blks_txs USING btree (code, blk_id);
 
 CREATE INDEX txs_code_immature_idx ON txs USING btree (code) INCLUDE (tx_id) WHERE (immature IS TRUE);
@@ -1394,6 +1396,7 @@ INSERT INTO nbxv1_migrations VALUES ('022.WalletsWalletsParentIdIndex');
 INSERT INTO nbxv1_migrations VALUES ('023.KeyPathInfoReturnsIndex');
 INSERT INTO nbxv1_migrations VALUES ('024.TrackedTxsReturnsFeature');
 INSERT INTO nbxv1_migrations VALUES ('025.TrackedTxReturnsDescriptorMetadata');
+INSERT INTO nbxv1_migrations VALUES ('026.WalletScriptsKeysetIndex');
 
 ALTER TABLE ONLY nbxv1_migrations
     ADD CONSTRAINT nbxv1_migrations_pkey PRIMARY KEY (script_name);
