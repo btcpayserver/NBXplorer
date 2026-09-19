@@ -33,6 +33,67 @@ namespace NBXplorer.Controllers
 	[Authorize]
 	public partial class MainController : Controller
 	{
+		internal const int MaxBroadcastParents = 100;
+
+		internal static bool ShouldRecoverMissingInputs(string message)
+		{
+			return message.StartsWith("Missing inputs", StringComparison.OrdinalIgnoreCase);
+		}
+
+		internal static HashSet<uint256> GetBroadcastParentIds(Transaction tx)
+		{
+			return tx.Inputs
+				.Select(input => input.PrevOut.Hash)
+				.Distinct()
+				.Take(MaxBroadcastParents)
+				.ToHashSet();
+		}
+
+		internal static IReadOnlyList<Transaction> OrderBroadcastParents(IEnumerable<Transaction> parents)
+		{
+			var remaining = parents
+				.GroupBy(parent => parent.GetHash())
+				.ToDictionary(group => group.Key, group => group.First());
+			var ordered = new List<Transaction>(remaining.Count);
+			while (remaining.Count != 0)
+			{
+				var next = remaining.Values.FirstOrDefault(parent =>
+					parent.Inputs.All(input => !remaining.ContainsKey(input.PrevOut.Hash)));
+				if (next == null)
+					break;
+				ordered.Add(next);
+				remaining.Remove(next.GetHash());
+			}
+			return ordered;
+		}
+
+		internal static async Task<IReadOnlyList<Transaction>> GetBroadcastParents(
+			Transaction tx,
+			Func<uint256[], Task<IEnumerable<Transaction>>> fetchParents)
+		{
+			var discovered = GetBroadcastParentIds(tx);
+			var pending = new Queue<uint256>(discovered);
+			var parents = new Dictionary<uint256, Transaction>();
+			while (pending.Count != 0)
+			{
+				var batch = pending.ToArray();
+				pending.Clear();
+				foreach (var parent in await fetchParents(batch))
+				{
+					if (!parents.TryAdd(parent.GetHash(), parent))
+						continue;
+					foreach (var input in parent.Inputs)
+					{
+						if (discovered.Count == MaxBroadcastParents)
+							break;
+						if (discovered.Add(input.PrevOut.Hash))
+							pending.Enqueue(input.PrevOut.Hash);
+					}
+				}
+			}
+			return OrderBroadcastParents(parents.Values);
+		}
+
 		public NBXplorerNetworkProvider NetworkProvider { get; }
 		public RPCClientProvider RPCClients { get; }
 		public RepositoryProvider RepositoryProvider { get; }
@@ -904,21 +965,38 @@ namespace NBXplorer.Controllers
 			{
 				rpcEx = ex;
 				Logs.Explorer.LogInformation($"{network.CryptoCode}: Transaction {tx.GetHash()} failed to broadcast (Code: {ex.RPCCode}, Message: {ex.RPCCodeMessage}, Details: {ex.Message} )");
-				if (trackedSourceContext.TrackedSource != null && ex.Message.StartsWith("Missing inputs", StringComparison.OrdinalIgnoreCase))
+				if (trackedSourceContext.TrackedSource != null && ShouldRecoverMissingInputs(ex.Message))
 				{
-					Logs.Explorer.LogInformation($"{network.CryptoCode}: Trying to broadcast unconfirmed of the wallet");
-					var transactions = await GetAnnotatedTransactions(repo, GetTransactionQuery.Create(trackedSourceContext.TrackedSource), true);
-					foreach (var existing in transactions.UnconfirmedTransactions)
+					var orderedParents = await GetBroadcastParents(tx, async parentIds =>
 					{
-						var t = existing.Record.Transaction ?? (await repo.GetSavedTransaction(existing.Record.TransactionHash))?.Transaction;
-						if (t == null)
-							continue;
+						var transactions = await repo.GetTransactions(
+							GetTransactionQuery.Create(trackedSourceContext.TrackedSource, parentIds), true);
+						var parents = new List<Transaction>();
+						foreach (var existing in transactions.Where(existing => existing.BlockHash == null))
+						{
+							var parent = existing.Transaction ?? (await repo.GetSavedTransaction(existing.TransactionHash))?.Transaction;
+							if (parent != null)
+								parents.Add(parent);
+						}
+						return parents;
+					});
+					Logs.Explorer.LogInformation($"{network.CryptoCode}: Trying to broadcast {orderedParents.Count} unconfirmed ancestors of transaction {tx.GetHash()}");
+					foreach (var parent in orderedParents)
+					{
 						try
 						{
-							await trackedSourceContext.RpcClient.SendRawTransactionAsync(t);
+							await trackedSourceContext.RpcClient.SendRawTransactionAsync(parent);
 						}
 						catch { }
 					}
+
+					if (orderedParents.Count == 0)
+						return new BroadcastResult(false)
+						{
+							RPCCode = rpcEx.RPCCode,
+							RPCCodeMessage = rpcEx.RPCCodeMessage,
+							RPCMessage = rpcEx.Message
+						};
 
 					try
 					{
