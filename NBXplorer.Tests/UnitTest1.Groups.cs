@@ -1,8 +1,10 @@
 ﻿using Dapper;
 using NBitcoin;
 using NBXplorer.Backend;
+using NBXplorer.DerivationStrategy;
 using NBXplorer.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -119,6 +121,77 @@ namespace NBXplorer.Tests
 
 			balance = await tester.Client.GetBalanceAsync(gts);
 			Assert.Equal(Money.Coins(1.0m + 1.2m), balance.Unconfirmed);
+		}
+
+		[Fact]
+		public async Task CanPageAndStreamGroupAddresses()
+		{
+			using var tester = CreateTester();
+			var group = await tester.Client.CreateGroupAsync(Cancel);
+			var addresses = Enumerable.Range(0, 5)
+				.Select(_ => new Key().GetAddress(ScriptPubKeyType.TaprootBIP86, tester.Network))
+				.ToArray();
+			await tester.Client.AddGroupAddressAsync("BTC", group.GroupId, addresses.Select(a => a.ToString()).ToArray(), Cancel);
+			var trackedSource = new GroupTrackedSource(group.GroupId);
+
+			var firstPage = await tester.Client.GetAddressPageAsync(trackedSource, 2, cancellation: Cancel);
+			var secondPage = await tester.Client.GetAddressPageAsync(trackedSource, 2, firstPage.Continuation, Cancel);
+			var thirdPage = await tester.Client.GetAddressPageAsync(trackedSource, 2, secondPage.Continuation, Cancel);
+
+			Assert.Equal(2, firstPage.Addresses.Length);
+			Assert.Equal(2, secondPage.Addresses.Length);
+			Assert.Single(thirdPage.Addresses);
+			Assert.NotNull(firstPage.Continuation);
+			Assert.NotNull(secondPage.Continuation);
+			Assert.Null(thirdPage.Continuation);
+			Assert.Equal(addresses.OrderBy(a => a.ToString()),
+				firstPage.Addresses.Concat(secondPage.Addresses).Concat(thirdPage.Addresses).OrderBy(a => a.ToString()));
+
+			var streamed = new List<BitcoinAddress>();
+			await foreach (var address in tester.Client.GetAddressesAsync(trackedSource, 2, Cancel))
+				streamed.Add(address);
+			Assert.Equal(addresses.OrderBy(a => a.ToString()), streamed.OrderBy(a => a.ToString()));
+		}
+
+		[Fact]
+		public async Task AddressPagesPreferStoredBlindedAddressForDerivationsAndGroups()
+		{
+			using var tester = CreateTester();
+			var wallet = tester.Client.GenerateWallet(new GenerateWalletRequest
+			{
+				ScriptPubKeyType = ScriptPubKeyType.Segwit
+			});
+			await tester.Client.TrackAsync(wallet.DerivationScheme, Cancel);
+			var unused = await tester.Client.GetUnusedAsync(wallet.DerivationScheme, DerivationFeature.Deposit, cancellation: Cancel);
+			var blindedAddress = new Key().GetAddress(ScriptPubKeyType.Segwit, tester.Network);
+			var group = await tester.Client.CreateGroupAsync(Cancel);
+			await tester.Client.AddGroupChildrenAsync(group.GroupId,
+				[new GroupChild { CryptoCode = tester.Client.CryptoCode, TrackedSource = wallet.TrackedSource }], Cancel);
+
+			await using (var connection = await tester.GetService<DbConnectionFactory>().CreateConnection())
+			{
+				await connection.ExecuteAsync("""
+					UPDATE descriptors_scripts
+					SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('blindedAddress', @blindedAddress)
+					WHERE code=@code AND script=@script
+					""", new
+				{
+					code = tester.Client.CryptoCode,
+					script = unused.ScriptPubKey.ToHex(),
+					blindedAddress = blindedAddress.ToString()
+				});
+			}
+
+			foreach (var trackedSource in new TrackedSource[]
+			{
+				new DerivationSchemeTrackedSource(wallet.DerivationScheme),
+				new GroupTrackedSource(group.GroupId)
+			})
+			{
+				var page = await tester.Client.GetAddressPageAsync(trackedSource, 100, cancellation: Cancel);
+				Assert.Contains(blindedAddress, page.Addresses);
+				Assert.DoesNotContain(unused.Address, page.Addresses);
+			}
 		}
 
 		private async Task<NBXplorerException> AssertNBXplorerException(int httpCode, Task<GroupInformation> task)
