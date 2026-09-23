@@ -12,6 +12,7 @@ namespace NBXplorer
 			InitBitcoin(networkType);
 			InitBitcore(networkType);
 			InitLitecoin(networkType);
+			InitLitecoinCash(networkType);
 			InitDogecoin(networkType);
 			InitPepecoin(networkType);
 			InitBCash(networkType);
