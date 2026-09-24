@@ -1054,7 +1054,13 @@ namespace NBXplorer.Backend
 		{
 			if (accountKey != null)
 			{
-				await rpc.ImportPrivKeyAsync(accountKey.Derive(keyPath).PrivateKey.GetWif(Network.NBitcoinNetwork), null, false);
+				try
+				{
+					await rpc.ImportPrivKeyAsync(accountKey.Derive(keyPath).PrivateKey.GetWif(Network.NBitcoinNetwork), null, false);
+				}
+				catch (RPCException ex) when (ex.RPCCode == RPCErrorCode.RPC_METHOD_NOT_FOUND) // Removed in Bitcoin Core v30 along with legacy wallets
+				{
+				}
 			}
 			else
 			{

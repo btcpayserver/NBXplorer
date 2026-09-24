@@ -3981,6 +3981,24 @@ namespace NBXplorer.Tests
 
 
 		[Fact]
+		public async Task CanGetUnusedWhenLegacyRPCImportIsUnavailable()
+		{
+			using (var tester = CreateTesterNoAutoStart())
+			{
+				tester.RPCWalletType = RPCWalletType.Descriptors;
+				tester.Start();
+				var derivation = (await tester.Client.GenerateWalletAsync(new GenerateWalletRequest()
+				{
+					SavePrivateKeys = true,
+					ImportKeysToRPC = true
+				})).DerivationScheme;
+				// Wallets generated against a legacy RPC wallet keep this mode, even after Bitcoin Core removed importprivkey (v30)
+				await tester.Client.SetMetadataAsync(derivation, WellknownMetadataKeys.ImportAddressToRPC, "Legacy");
+				Assert.NotNull(await tester.Client.GetUnusedAsync(derivation, DerivationFeature.Deposit, reserve: true));
+			}
+		}
+
+		[Fact]
 		public async Task CanGenerateWithRPCTracking()
 		{
 			using (var tester = CreateTesterNoAutoStart())
