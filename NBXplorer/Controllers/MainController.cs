@@ -560,7 +560,7 @@ namespace NBXplorer.Controllers
 			return this.GetNetwork(cryptoCode, false).JsonSerializerSettings;
 		}
 
-		[Route($"{CommonRoutes.BaseCryptoEndpoint}/events")]
+		[HttpGet($"{CommonRoutes.BaseCryptoEndpoint}/events")]
 		public async Task<JArray> GetEvents(string cryptoCode, int lastEventId = 0, int? limit = null, bool longPolling = false, CancellationToken cancellationToken = default)
 		{
 			if (limit != null && limit.Value < 1)
@@ -596,7 +596,7 @@ namespace NBXplorer.Controllers
 		}
 
 
-		[Route($"{CommonRoutes.BaseCryptoEndpoint}/events/latest")]
+		[HttpGet($"{CommonRoutes.BaseCryptoEndpoint}/events/latest")]
 		public async Task<JArray> GetLatestEvents(string cryptoCode, int limit = 10)
 		{
 			if (limit < 1)

@@ -3262,8 +3262,7 @@ namespace NBXplorer.Tests
 		}
 
 		/// <summary>
-		/// To understand this test, read https://github.com/btcpayserver/NBXplorer/blob/master/docs/Design.md
-		/// This create a specific graph of transaction and make sure that it computes the UTXO set as expected.
+		/// Creates a specific transaction graph and verifies that it computes the expected UTXO set.
 		/// </summary>
 		[Fact]
 		public void CanCalculateCorrectUTXOSet()
