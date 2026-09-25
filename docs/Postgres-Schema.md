@@ -6,13 +6,13 @@ Knowing the SQL schema is useful in three situations:
 2. You want to do your own indexer on top of it (in a different language or for a crypto we don't support)
 3. You want to create your own API on top of it for features not exposed by NBXplorer's API.
 
-This model is contained in [this SQL script](https://github.com/dgarage/NBXplorer/blob/master/NBXplorer/DBScripts/FullSchema.sql).
+This model is contained in [this SQL script](../NBXplorer/DBScripts/FullSchema.sql).
 There are additional comments there about the meaning of columns and views.
 
 Here is a diagram:
 ![NBXplorer Database Schema](./images/nxplorer-schema.png)
 
-Or look it interactively on [LiamERD](https://liambx.com/erd/p/github.com/dgarage/NBXplorer/blob/master/NBXplorer/DBScripts/FullSchema.sql?showMode=ALL_FIELDS).
+Or view it interactively on [LiamERD](https://liambx.com/erd/p/github.com/btcpayserver/NBXplorer/blob/master/NBXplorer/DBScripts/FullSchema.sql?showMode=ALL_FIELDS).
 
 The SQL Schema of NBXplorer is multi-tenant, multi-asset, multi-chain.
 It is divided in several parts:

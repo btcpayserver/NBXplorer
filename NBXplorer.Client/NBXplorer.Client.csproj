@@ -34,7 +34,7 @@
         <InternalsVisibleTo Include="NBXplorer.Tests" />
     </ItemGroup>
   <ItemGroup>
-	<None Include="..\README.md" Pack="true" PackagePath="\" />
+	<None Include="README.md" Pack="true" PackagePath="\" />
 	<None Include="Bitcoin.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
