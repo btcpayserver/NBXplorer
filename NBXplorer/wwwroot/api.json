@@ -2,8 +2,12 @@
   "openapi": "3.0.0",
   "info": {
     "title": "NBXplorer API",
-    "description": "NBXplorer is a multi-cryptocurrency lightweight block explorer that does not index the whole blockchain. \nInstead, it listens to transactions and blocks from a trusted full node and indexes only addresses and \ntransactions that belong to tracked DerivationSchemes.\n\nBy default, NBXplorer is are using [Basic Authentication with a cookie file](https://github.com/btcpayserver/NBXplorer/blob/master/docs/API.md#authentication) for authentication.",
-    "version": "1.0.0"
+    "description": "NBXplorer is a multi-cryptocurrency lightweight block explorer that does not index the whole blockchain. \nInstead, it listens to transactions and blocks from a trusted full node and indexes only addresses and \ntransactions that belong to tracked DerivationSchemes.\n\nBy default, NBXplorer uses [Basic Authentication with a cookie file](https://github.com/btcpayserver/NBXplorer/blob/master/docs/API.md#authentication).",
+    "version": "1.0.0",
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/btcpayserver/NBXplorer/blob/master/LICENSE"
+    }
   },
   "servers": [
     {
@@ -19,6 +23,35 @@
     {
       "name": "Derivations",
       "description": "A derivation scheme, (also called derivationStrategy) is a flexible way to define how to generate deterministic addresses for a wallet. NBXplorer will track any addresses on the `0/x`, `1/x` and `x` path.\n\nFor more details, check out the documentation on [GitHub](https://github.com/btcpayserver/NBXplorer/blob/master/docs/API.md#derivation-scheme)."
+    },
+    {
+      "name": "Addresses",
+      "description": "Operations for tracking and querying standalone addresses."
+    },
+    {
+      "name": "Legacy",
+      "description": "Legacy API operations retained for compatibility."
+    },
+    {
+      "name": "Transactions",
+      "description": "Operations for querying and broadcasting transactions."
+    },
+    {
+      "name": "Blockchain",
+      "description": "Node, synchronization, fee, and blockchain operations."
+    },
+    {
+      "name": "Health",
+      "description": "Service health checks."
+    },
+    {
+      "name": "Events",
+      "description": "Polling and WebSocket event streams."
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
     }
   ],
   "components": {
@@ -39,6 +72,16 @@
         "example": "BTC",
         "description": "The cryptocurrency code to track (e.g., 'BTC' for Bitcoin, 'LTC' for Litecoin)."
       },
+      "Network": {
+        "name": "network",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "BTC",
+        "description": "The cryptocurrency code identifying the network."
+      },
       "DerivationScheme": {
         "name": "derivationScheme",
         "in": "path",
@@ -57,6 +100,33 @@
           "type": "string"
         },
         "description": "The unique identifier for the group."
+      },
+      "Address": {
+        "name": "address",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "The address to track or query."
+      },
+      "TransactionId": {
+        "name": "txId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "The transaction ID to retrieve."
+      },
+      "MetadataKey": {
+        "name": "key",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "The metadata key."
       }
     },
     "schemas": {
@@ -105,7 +175,7 @@
           "feeRate": {
             "type": "number",
             "description": "The estimated fee rate in satoshis per vByte. Only available if the transaction has been indexed when it was in the mempool.",
-            "example": 20.0,
+            "example": 20,
             "nullable": true
           },
           "chunk": {
@@ -128,7 +198,7 @@
               "feeRate": {
                 "type": "number",
                 "description": "Chunk fee rate in satoshis per vByte.",
-                "example": 20.0,
+                "example": 20,
                 "nullable": true
               }
             }
@@ -141,7 +211,8 @@
           "blockHash": {
             "type": "string",
             "example": "7639350b31f3ce07ff976ebae772fef1602b30a10ccb8ca69047fe0fe8b9083c",
-            "description": "The hash of the block containing this transaction. Will be `null` if the transaction is unconfirmed."
+            "description": "The hash of the block containing this transaction. Will be `null` if the transaction is unconfirmed.",
+            "nullable": true
           },
           "confirmations": {
             "type": "integer",
@@ -151,7 +222,8 @@
           "height": {
             "type": "integer",
             "description": "The block height. Will be `null` if the transaction is unconfirmed.",
-            "example": 876593
+            "example": 876593,
+            "nullable": true
           },
           "transactionId": {
             "type": "string",
@@ -179,14 +251,14 @@
           }
         }
       },
-
       "TransactionResponse": {
         "type": "object",
         "properties": {
           "blockHash": {
             "type": "string",
             "example": "3cdb91b426822f15ad3ca223654db914dc487fa73393532b089689b8e38efbf3",
-            "description": "The hash of the block containing this transaction. Will be `null` if the transaction is unconfirmed."
+            "description": "The hash of the block containing this transaction. Will be `null` if the transaction is unconfirmed.",
+            "nullable": true
           },
           "confirmations": {
             "type": "integer",
@@ -195,7 +267,8 @@
           "height": {
             "type": "integer",
             "description": "The block height. Will be `null` if the transaction is unconfirmed.",
-            "example": 876593
+            "example": 876593,
+            "nullable": true
           },
           "transactionId": {
             "type": "string",
@@ -250,6 +323,92 @@
           }
         }
       },
+      "TransactionInformationSet": {
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionResponse"
+            }
+          }
+        },
+        "required": [
+          "transactions"
+        ]
+      },
+      "GetTransactionsResponse": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer"
+          },
+          "confirmedTransactions": {
+            "$ref": "#/components/schemas/TransactionInformationSet"
+          },
+          "unconfirmedTransactions": {
+            "$ref": "#/components/schemas/TransactionInformationSet"
+          },
+          "immatureTransactions": {
+            "$ref": "#/components/schemas/TransactionInformationSet"
+          },
+          "replacedTransactions": {
+            "$ref": "#/components/schemas/TransactionInformationSet"
+          }
+        },
+        "required": [
+          "height",
+          "confirmedTransactions",
+          "unconfirmedTransactions",
+          "immatureTransactions",
+          "replacedTransactions"
+        ]
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "Healthy",
+              "Degraded",
+              "Unhealthy"
+            ]
+          },
+          "results": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "Healthy",
+                    "Degraded",
+                    "Unhealthy"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "data": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "required": [
+                "status",
+                "data"
+              ]
+            }
+          }
+        },
+        "required": [
+          "status",
+          "results"
+        ]
+      },
       "TransactionOutput": {
         "type": "object",
         "properties": {
@@ -285,8 +444,8 @@
           },
           "keyIndex": {
             "type": "integer",
-            "description" : "The index of the key in the descriptor (For example, if the keyPath is 0/123, then it is 123)",
-            "example" : 123
+            "description": "The index of the key in the descriptor (For example, if the keyPath is 0/123, then it is 123)",
+            "example": 123
           }
         }
       },
@@ -330,8 +489,8 @@
           },
           "keyIndex": {
             "type": "integer",
-            "description" : "The index of the key in the descriptor (For example, if the keyPath is 1/2, then it is 2)",
-            "example" : 2
+            "description": "The index of the key in the descriptor (For example, if the keyPath is 1/2, then it is 2)",
+            "example": 2
           },
           "value": {
             "type": "integer",
@@ -368,7 +527,7 @@
           "index": {
             "type": "integer",
             "description": "The derivation path index of this address",
-            "example": "123",
+            "example": 123,
             "nullable": true
           },
           "scriptPubKey": {
@@ -832,8 +991,9 @@
           }
         },
         "required": [
-          "error",
-          "code"
+          "httpCode",
+          "code",
+          "message"
         ]
       },
       "Event": {
@@ -853,7 +1013,7 @@
           },
           "data": {
             "description": "Data associated with the event.",
-            "oneOf": [
+            "anyOf": [
               {
                 "$ref": "#/components/schemas/NewBlockEvent"
               },
@@ -902,11 +1062,11 @@
           "derivationStrategy": "tpubD6NzVbkrYhZ4X2p2D8kx6XV9V5iCJKMBHuBim1BLnZAZC1JobYkdwSrwF8R74V2oUWkJG3H24LwxnXs9wb6Ksivs2gj4RudMteyVai2AsmA-[p2sh]",
           "transactionData": {
             "confirmations": 0,
-            "blockId": null,
-            "transactionHash": "f135537b40ac7a524273176b60e464b7f279f622031ec53af302d959966d7364",
             "transaction": "0200000001dd7f53b09438fed83abe25dd6cdc30ee2092ce8c855cb9e7b0faa38aba8bc0f500000000484730440220093a837ff4be4b64b2ed4625abb128966caad0cb7830cac7af4f615bbf6b52ce02206227a3ddec3fac9e49f414eeab1388d0e67829620ac3a8fb2f4bbfc5b67bd02901feffffff0200e1f5050000000017a91476de0c5d07fd202880672bc702162b7f18e13aca87640210240100000017a9147cfa038496438a6d3c95cfac990f4dffc6cb44f28768000000",
             "height": null,
-            "timestamp": 1540434424
+            "timestamp": 1540434424,
+            "blockHash": null,
+            "transactionId": "f135537b40ac7a524273176b60e464b7f279f622031ec53af302d959966d7364"
           },
           "inputs": [
             {
@@ -936,7 +1096,10 @@
             }
           ],
           "cryptoCode": "BTC",
-          "replacing": [ "25d6bc1b2812670550aca8b2984670203b5ebf00e75f9b2bbf1940c3fa27841e", "81a20eb55ec16b92c65d4e142278fd521caa9e5dcad9d941c8e256dbd917ae84" ]
+          "replacing": [
+            "25d6bc1b2812670550aca8b2984670203b5ebf00e75f9b2bbf1940c3fa27841e",
+            "81a20eb55ec16b92c65d4e142278fd521caa9e5dcad9d941c8e256dbd917ae84"
+          ]
         },
         "properties": {
           "blockId": {
@@ -972,6 +1135,13 @@
           "cryptoCode": {
             "type": "string",
             "description": "Cryptocurrency code (e.g., 'BTC')."
+          },
+          "replacing": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Transaction IDs replaced by this transaction."
           }
         }
       },
@@ -1000,7 +1170,10 @@
             "items": {
               "type": "string"
             },
-            "example": [ "b1ceb33c783788d7c9d4c1417ffe3490eb0c83abd9267d470eaa06a1d3be0475-1", "8224f00a3c12f19b89155b6e4a5ed2320f6407d37d1a6ca7da8def0953fecc3e-2" ]
+            "example": [
+              "b1ceb33c783788d7c9d4c1417ffe3490eb0c83abd9267d470eaa06a1d3be0475-1",
+              "8224f00a3c12f19b89155b6e4a5ed2320f6407d37d1a6ca7da8def0953fecc3e-2"
+            ]
           }
         }
       },
@@ -1020,7 +1193,10 @@
             "items": {
               "type": "string"
             },
-            "example": [ "f3e34c3ae29c79ddf807de0ab3b40da7862adb1b175b7421d89ec78446a52b13-1", "fd97fb1de63fcdb9fa1614a74775e84818b2dbd79fe36aef9e0c18f9fad03742-2" ]
+            "example": [
+              "f3e34c3ae29c79ddf807de0ab3b40da7862adb1b175b7421d89ec78446a52b13-1",
+              "fd97fb1de63fcdb9fa1614a74775e84818b2dbd79fe36aef9e0c18f9fad03742-2"
+            ]
           }
         }
       },
@@ -1042,9 +1218,9 @@
               "verificationProgress": {
                 "type": "number",
                 "format": "float",
-                "example": 1.0,
+                "example": 1,
                 "minimum": 0,
-                "maximum": 1.0
+                "maximum": 1
               },
               "isSynched": {
                 "type": "boolean",
@@ -1053,13 +1229,13 @@
               "incrementalRelayFee": {
                 "type": "number",
                 "format": "float",
-                "example": 1.0,
+                "example": 1,
                 "description": "The incremental relay fee in sats/vbyte"
               },
               "minRelayTxFee": {
                 "type": "number",
                 "format": "float",
-                "example": 1.0,
+                "example": 1,
                 "description": "The minimum relay fee in sats/vbyte"
               },
               "capabilities": {
@@ -1083,7 +1259,8 @@
                   }
                 }
               }
-            }
+            },
+            "nullable": true
           },
           "isFullySynched": {
             "type": "boolean",
@@ -1151,13 +1328,17 @@
             "example": "1.0"
           },
           "id": {
-            "oneOf": [
-              { "type": "string" },
-              { "type": "integer" }
-            ],
-            "nullable": true,
             "description": "An identifier established by the client.",
-            "example": "1"
+            "example": "1",
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              },
+              {
+                "type": "integer"
+              }
+            ]
           },
           "method": {
             "type": "string",
@@ -1171,7 +1352,11 @@
             "example": []
           }
         },
-        "required": [ "jsonrpc", "method", "params" ]
+        "required": [
+          "jsonrpc",
+          "method",
+          "params"
+        ]
       },
       "RpcResponse": {
         "type": "object",
@@ -1192,8 +1377,7 @@
             }
           },
           "result": {
-            "description": "The result of the RPC call. The structure depends on the method called.",
-            "nullable": true
+            "description": "The result of the RPC call. The structure depends on the method called."
           },
           "resultString": {
             "type": "string",
@@ -1201,13 +1385,17 @@
             "nullable": true
           },
           "id": {
-            "oneOf": [
-              { "type": "string" },
-              { "type": "integer" }
-            ],
-            "nullable": true,
             "description": "An identifier established by the client.",
-            "example": "1"
+            "example": "1",
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              },
+              {
+                "type": "integer"
+              }
+            ]
           }
         }
       }
@@ -1241,7 +1429,8 @@
           "404": {
             "description": "The derivation scheme isn't being tracked."
           }
-        }
+        },
+        "operationId": "IsDerivationSchemeTracked"
       },
       "post": {
         "summary": "Track a derivation scheme",
@@ -1294,10 +1483,7 @@
                           "type": "integer",
                           "description": "Optional. The maximum number of addresses to pre-generate for this feature to prevent uncontrolled growth."
                         }
-                      },
-                      "required": [
-                        "feature"
-                      ]
+                      }
                     }
                   },
                   "wait": {
@@ -1327,20 +1513,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully started tracking the derivation scheme.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Derivation scheme is now being tracked."
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Successfully started tracking the derivation scheme."
           },
           "400": {
             "description": "Bad Request. The request was invalid. Possible reasons include an invalid `cryptoCode` or `derivationScheme`.",
@@ -1350,8 +1523,9 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Invalid derivation scheme format.",
-                  "code": 400
+                  "httpCode": 400,
+                  "code": "request-error",
+                  "message": "Invalid derivation scheme format."
                 }
               }
             }
@@ -1364,8 +1538,9 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Cryptocurrency code not supported.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Cryptocurrency code not supported."
                 }
               }
             }
@@ -1398,16 +1573,22 @@
                   "description": "`keyPath` to cancel",
                   "example": "0/1"
                 },
-                "example": [ "0/1", "0/2", "1/2" ]
+                "example": [
+                  "0/1",
+                  "0/2",
+                  "1/2"
+                ]
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
             "description": "Call succeeded"
           }
-        }
+        },
+        "operationId": "CancelAddressReservation"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/addresses/unused": {
@@ -1460,6 +1641,16 @@
               "default": false
             },
             "description": "Optional. If set to `true`, the returned address will be marked as used. Default is `false`."
+          },
+          {
+            "name": "autoTrack",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Track the derivation scheme automatically if it is not already tracked."
           }
         ],
         "responses": {
@@ -1481,8 +1672,9 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Strategy not found.",
-                  "code": 400
+                  "httpCode": 400,
+                  "code": "request-error",
+                  "message": "Strategy not found."
                 }
               }
             }
@@ -1495,8 +1687,9 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Crypto code not supported or not found.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Crypto code not supported or not found."
                 }
               }
             }
@@ -1587,69 +1780,6 @@
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations": {
-      "get": {
-        "summary": "List tracked derivation schemes",
-        "description": "Retrieves a list of all derivation schemes (wallets) that are currently being tracked for the specified cryptocurrency. This endpoint allows you to see all the wallets that NBXplorer is monitoring for transactions and balance changes.",
-        "tags": [
-          "Derivations"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/CryptoCode"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved the list of tracked derivation schemes.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DerivationScheme"
-                  }
-                },
-                "example": [
-                  {
-                    "derivationScheme": "tpubD6NzVbkrYhZ4WcPozSqALNCrJEt4C...",
-                    "trackedSource": "DERIVATIONSCHEME:tpubD6NzVbkrYhZ4WcPozSqALNCrJEt4C...",
-                    "derivationStrategy": "tpubD6NzVbkrYhZ4WcPozSqALNCrJEt4C...-[p2sh]",
-                    "network": "BTC",
-                    "metadata": {
-                      "label": "My Wallet",
-                      "createdAt": "2023-10-01T12:34:56Z"
-                    }
-                  },
-                  {
-                    "derivationScheme": "tpubD6NzVbkrYhZ4WcPozSqALNCrJEt4D...",
-                    "trackedSource": "DERIVATIONSCHEME:tpubD6NzVbkrYhZ4WcPozSqALNCrJEt4D...",
-                    "derivationStrategy": "tpubD6NzVbkrYhZ4WcPozSqALNCrJEt4D...-[p2wpkh]",
-                    "network": "BTC",
-                    "metadata": {
-                      "label": "Savings Account",
-                      "createdAt": "2023-09-15T09:21:00Z"
-                    }
-                  }
-                ]
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. The specified cryptocurrency code is not supported or no derivation schemes are being tracked.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": "No derivation schemes found for the specified crypto code.",
-                  "code": 404
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "summary": "Generate a hot wallet",
         "operationId": "GenerateWallet",
@@ -1692,19 +1822,14 @@
         "operationId": "TrackSingleAddress",
         "description": "Starts tracking a single address. Consider adding [individual addresses to a group](#tag/Groups/operation/AddAddress) instead.",
         "tags": [
-          "Legacy"
+          "Addresses"
         ],
         "parameters": [
           {
             "$ref": "#/components/parameters/CryptoCode"
           },
           {
-            "name": "address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "$ref": "#/components/parameters/Address"
           }
         ],
         "responses": {
@@ -1712,6 +1837,35 @@
             "description": "Successfully tracked address"
           }
         }
+      },
+      "get": {
+        "summary": "Check whether an address is tracked",
+        "description": "Checks whether the specified standalone address is tracked.",
+        "tags": [
+          "Addresses"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/Address"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The address is being tracked."
+          },
+          "404": {
+            "description": "The address isn't being tracked."
+          }
+        },
+        "operationId": "IsAddressTracked"
       }
     },
     "/v1/cryptos/{cryptoCode}/addresses/{address}/balance": {
@@ -1745,7 +1899,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetAddressBalance"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/balance": {
@@ -1773,7 +1928,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetDerivationSchemeBalance"
       }
     },
     "/v1/cryptos/{cryptoCode}/transactions": {
@@ -1858,7 +2014,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "BroadcastTransaction"
       }
     },
     "/v1/cryptos/{cryptoCode}/transactions/{txId}": {
@@ -1887,9 +2044,9 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "default": false
+              "default": true
             },
-            "description": "Optional. If set to `true`, the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `false`."
+            "description": "Optional. If set to `true`, the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `true`."
           }
         ],
         "responses": {
@@ -1911,13 +2068,15 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Transaction not found.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Transaction not found."
                 }
               }
             }
           }
-        }
+        },
+        "operationId": "GetTransaction"
       }
     },
     "/v1/cryptos/{cryptoCode}/groups/{groupId}/transactions": {
@@ -1941,9 +2100,9 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "default": false
+              "default": true
             },
-            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `false`."
+            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `true`."
           },
           {
             "name": "from",
@@ -1972,10 +2131,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TransactionResponse"
-                  }
+                  "$ref": "#/components/schemas/GetTransactionsResponse"
                 }
               }
             }
@@ -1988,13 +2144,15 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Derivation scheme not found.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Derivation scheme not found."
                 }
               }
             }
           }
-        }
+        },
+        "operationId": "ListGroupTransactions"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/transactions": {
@@ -2019,9 +2177,9 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "default": false
+              "default": true
             },
-            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `false`."
+            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `true`."
           },
           {
             "name": "from",
@@ -2050,10 +2208,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TransactionResponse"
-                  }
+                  "$ref": "#/components/schemas/GetTransactionsResponse"
                 }
               }
             }
@@ -2066,8 +2221,9 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Derivation scheme not found.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Derivation scheme not found."
                 }
               }
             }
@@ -2118,7 +2274,7 @@
           }
         ],
         "requestBody": {
-          "required": false,
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -2128,7 +2284,7 @@
                     "type": "array",
                     "description": "The transactions to rescan",
                     "items": {
-                      "oneOf": [
+                      "anyOf": [
                         {
                           "type": "object",
                           "title": "blockId + txId (Unpruned node)",
@@ -2183,7 +2339,8 @@
           "200": {
             "description": "Rescan initiated successfully."
           }
-        }
+        },
+        "operationId": "RescanTransactions"
       }
     },
     "/v1/cryptos/{cryptoCode}/rescan-utxos": {
@@ -2211,21 +2368,26 @@
                       "type": "string",
                       "example": "f3e34c3ae29c79ddf807de0ab3b40da7862adb1b175b7421d89ec78446a52b13-1"
                     },
-                    "example": [ "f3e34c3ae29c79ddf807de0ab3b40da7862adb1b175b7421d89ec78446a52b13-1", "fd97fb1de63fcdb9fa1614a74775e84818b2dbd79fe36aef9e0c18f9fad03742-2" ]
+                    "example": [
+                      "f3e34c3ae29c79ddf807de0ab3b40da7862adb1b175b7421d89ec78446a52b13-1",
+                      "fd97fb1de63fcdb9fa1614a74775e84818b2dbd79fe36aef9e0c18f9fad03742-2"
+                    ]
                   }
                 }
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
             "description": "Rescan initiated successfully."
           }
-        }
+        },
+        "operationId": "ImportUTXOs"
       }
     },
-    "/v1/cryptos/{cryptoCode}/psbt/update": {
+    "/v1/cryptos/{network}/psbt/update": {
       "post": {
         "summary": "Update Partially Signed Bitcoin Transaction",
         "tags": [
@@ -2233,7 +2395,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/CryptoCode"
+            "$ref": "#/components/parameters/Network"
           }
         ],
         "requestBody": {
@@ -2268,7 +2430,8 @@
                 }
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -2286,59 +2449,33 @@
               }
             }
           }
-        }
+        },
+        "operationId": "UpdatePSBT"
       }
     },
     "/health": {
       "get": {
         "summary": "Health check endpoint",
-        "description": "Performs a health check of NBXplorer and its connected nodes. This endpoint can be used without authentication and returns HTTP 200 if all nodes are ready and synchronized.",
+        "description": "Performs a health check of NBXplorer and its connected nodes. This endpoint can be used without authentication. Healthy and degraded results return HTTP 200; unhealthy results return HTTP 503.",
         "tags": [
           "Health"
         ],
         "security": [],
         "responses": {
           "200": {
-            "description": "System is healthy. All nodes connected to NBXplorer are ready and synchronized.",
+            "description": "The service is healthy or degraded. A degraded result indicates that at least one node is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "description": "The overall health status of the system.",
-                      "example": "healthy"
-                    },
-                    "details": {
-                      "type": "object",
-                      "description": "Detailed health status for each connected cryptocurrency node.",
-                      "additionalProperties": {
-                        "type": "object",
-                        "properties": {
-                          "isHealthy": {
-                            "type": "boolean",
-                            "description": "Indicates whether the node is healthy (true) or not (false)."
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "A detailed status message for the node."
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/HealthResponse"
                 },
                 "example": {
-                  "status": "healthy",
-                  "details": {
-                    "BTC": {
-                      "isHealthy": true,
-                      "status": "Node is fully synchronized."
-                    },
-                    "LTC": {
-                      "isHealthy": true,
-                      "status": "Node is fully synchronized."
+                  "status": "Healthy",
+                  "results": {
+                    "Nodes": {
+                      "status": "Healthy",
+                      "description": null,
+                      "data": {}
                     }
                   }
                 }
@@ -2346,53 +2483,27 @@
             }
           },
           "503": {
-            "description": "Service Unavailable. One or more nodes are not synchronized or unavailable.",
+            "description": "The health checks report an unhealthy service.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "description": "The overall health status of the system.",
-                      "example": "unhealthy"
-                    },
-                    "details": {
-                      "type": "object",
-                      "description": "Detailed health status for each connected cryptocurrency node.",
-                      "additionalProperties": {
-                        "type": "object",
-                        "properties": {
-                          "isHealthy": {
-                            "type": "boolean",
-                            "description": "Indicates whether the node is healthy (true) or not (false)."
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "A detailed status message for the node."
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/HealthResponse"
                 },
                 "example": {
-                  "status": "unhealthy",
-                  "details": {
-                    "BTC": {
-                      "isHealthy": false,
-                      "status": "Node is synchronizing (blocks: 650000, headers: 700000)."
-                    },
-                    "LTC": {
-                      "isHealthy": true,
-                      "status": "Node is fully synchronized."
+                  "status": "Unhealthy",
+                  "results": {
+                    "Nodes": {
+                      "status": "Unhealthy",
+                      "description": "A node health check failed.",
+                      "data": {}
                     }
                   }
                 }
               }
             }
           }
-        }
+        },
+        "operationId": "GetHealth"
       }
     },
     "/v1/cryptos/connect": {
@@ -2456,8 +2567,7 @@
             "name": "limit",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "default": null
+              "type": "integer"
             },
             "description": "Limit the maximum number of events to return (default: `null`)."
           }
@@ -2485,7 +2595,7 @@
                         ]
                       },
                       "data": {
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "$ref": "#/components/schemas/NewBlockEvent"
                           },
@@ -2558,7 +2668,7 @@
                         ]
                       },
                       "data": {
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "$ref": "#/components/schemas/NewBlockEvent"
                           },
@@ -2594,7 +2704,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "Create"
       }
     },
     "/v1/groups/{groupId}": {
@@ -2642,103 +2753,9 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Group not found.",
-                  "code": 404
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Create or overwrite a group",
-        "operationId": "Create",
-        "description": "Creates a new group with the specified groupId. If a group with the same groupId already exists, it will be overwritten.",
-        "tags": [
-          "Groups"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/GroupId"
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "children": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "An array of tracked sources (derivation schemes or other groups) to be included in the group."
-                  }
-                }
-              },
-              "example": {
-                "children": [
-                  "DERIVATIONSCHEME:xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiK...",
-                  "GROUP:my-other-group"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Group created or overwritten successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Group"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request. Invalid groupId or children.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": "Invalid groupId or children.",
-                  "code": 400
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete a group",
-        "description": "Deletes an existing group specified by `groupId`. This will remove the group but will not delete any of its child tracked sources.",
-        "tags": [
-          "Groups"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/GroupId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Group deleted successfully."
-          },
-          "404": {
-            "description": "Not Found. The specified group does not exist.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": "Group not found.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Group not found."
                 }
               }
             }
@@ -2747,55 +2764,6 @@
       }
     },
     "/v1/groups/{groupId}/children": {
-      "get": {
-        "summary": "Get children of a group",
-        "description": "Retrieves a list of child tracked sources associated with the specified group.",
-        "tags": [
-          "Groups"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/GroupId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Children retrieved successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TrackedSource"
-                  }
-                },
-                "example": [
-                  {
-                    "trackedSource": "DERIVATIONSCHEME:tpubD6NzVbkrYhZ4W..."
-                  },
-                  {
-                    "trackedSource": "GROUP:another-group-id"
-                  }
-                ]
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. The specified group does not exist.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": "Group not found.",
-                  "code": 404
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "summary": "Add children to a group",
         "description": "Adds one or more child tracked sources (derivation schemes or other groups) to the specified group.",
@@ -2860,13 +2828,98 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Group not found.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Group not found."
                 }
               }
             }
           }
-        }
+        },
+        "operationId": "AddGroupChildren"
+      },
+      "delete": {
+        "summary": "Remove children from a group",
+        "description": "Removes one or more child tracked sources from the specified group.",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GroupId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "A list of tracked sources to be removed from the group.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TrackedSource"
+                }
+              },
+              "example": [
+                {
+                  "trackedSource": "DERIVATIONSCHEME:tpubD6NzVbkrYhZ4W..."
+                }
+              ]
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Children removed from group successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                },
+                "example": {
+                  "trackedSource": "GROUP:my-group-id",
+                  "groupId": "my-group-id",
+                  "children": [
+                    {
+                      "trackedSource": "GROUP:another-group-id"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request. This endpoint accepts a request body with the DELETE method, which is non-standard. Ensure the request is correctly formatted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "httpCode": 400,
+                  "code": "request-error",
+                  "message": "Invalid request body."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found. The specified group does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Group not found."
+                }
+              }
+            }
+          }
+        },
+        "operationId": "DeleteGroupChildren"
       }
     },
     "/v1/groups/{groupId}/children/delete": {
@@ -2928,8 +2981,9 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Invalid request body.",
-                  "code": 400
+                  "httpCode": 400,
+                  "code": "request-error",
+                  "message": "Invalid request body."
                 }
               }
             }
@@ -2942,13 +2996,15 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Group not found.",
-                  "code": 404
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Group not found."
                 }
               }
             }
           }
-        }
+        },
+        "operationId": "DeleteGroupChildrenLegacy"
       }
     },
     "/v1/cryptos/{cryptoCode}/groups/{groupId}/addresses": {
@@ -2976,7 +3032,8 @@
                 }
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -3010,7 +3067,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetGroupBalance"
       }
     },
     "/v1/cryptos/{cryptoCode}/groups/{groupId}/utxos": {
@@ -3039,7 +3097,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetGroupUTXOs"
       }
     },
     "/v1/groups/{groupId}/metadata/{key}": {
@@ -3050,26 +3109,16 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/CryptoCode"
-          },
-          {
             "$ref": "#/components/parameters/GroupId"
           },
           {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "$ref": "#/components/parameters/MetadataKey"
           }
         ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object"
-              }
+              "schema": {}
             }
           }
         },
@@ -3077,7 +3126,8 @@
           "200": {
             "description": "Metadata attached successfully"
           }
-        }
+        },
+        "operationId": "SetGroupMetadata"
       },
       "get": {
         "summary": "Retrieve metadata from a group",
@@ -3086,18 +3136,10 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/CryptoCode"
-          },
-          {
             "$ref": "#/components/parameters/GroupId"
           },
           {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "$ref": "#/components/parameters/MetadataKey"
           }
         ],
         "responses": {
@@ -3105,43 +3147,15 @@
             "description": "Metadata retrieved successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object"
-                }
+                "schema": {}
               }
             }
           },
           "404": {
             "description": "Key not found"
           }
-        }
-      },
-      "delete": {
-        "summary": "Remove metadata from a group",
-        "tags": [
-          "Groups"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/CryptoCode"
-          },
-          {
-            "$ref": "#/components/parameters/GroupId"
-          },
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Metadata removed successfully"
-          }
-        }
+        },
+        "operationId": "GetGroupMetadata"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/metadata/{key}": {
@@ -3169,9 +3183,7 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object"
-              }
+              "schema": {}
             }
           }
         },
@@ -3179,7 +3191,8 @@
           "200": {
             "description": "Metadata attached successfully"
           }
-        }
+        },
+        "operationId": "SetDerivationSchemeMetadata"
       },
       "get": {
         "summary": "Retrieve metadata from a derivation scheme",
@@ -3207,43 +3220,15 @@
             "description": "Metadata retrieved successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object"
-                }
+                "schema": {}
               }
             }
           },
           "404": {
             "description": "Key not found"
           }
-        }
-      },
-      "delete": {
-        "summary": "Remove metadata from a derivation scheme",
-        "tags": [
-          "Derivations"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/CryptoCode"
-          },
-          {
-            "$ref": "#/components/parameters/DerivationScheme"
-          },
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Metadata removed successfully"
-          }
-        }
+        },
+        "operationId": "GetDerivationSchemeMetadata"
       }
     },
     "/v1/cryptos/{cryptoCode}/fees/{blockCount}": {
@@ -3285,7 +3270,7 @@
                     }
                   },
                   "example": {
-                    "feeRate": 25.0,
+                    "feeRate": 25,
                     "blockCount": 2
                   }
                 }
@@ -3302,7 +3287,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetFeeRate"
       }
     },
     "/v1/cryptos/{cryptoCode}/status": {
@@ -3328,7 +3314,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetStatus"
       }
     },
     "/v1/cryptos/{cryptoCode}/scripts/{script}": {
@@ -3341,9 +3328,6 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/CryptoCode"
-          },
-          {
-            "$ref": "#/components/parameters/DerivationScheme"
           },
           {
             "name": "script",
@@ -3369,7 +3353,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetScriptInformation"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/scripts/{script}": {
@@ -3420,7 +3405,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetDerivationScriptInformation"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/utxos/scan": {
@@ -3472,6 +3458,16 @@
           "200": {
             "description": "Scan request queued"
           },
+          "400": {
+            "description": "RPC unavailable. Code: `rpc-unavailable`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "405": {
             "description": "ScanUTXOSet not supported. Code: `scanutxoset-not-suported`",
             "content": {
@@ -3491,21 +3487,10 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "RPC unavailable. Code: `rpc-unavailable`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
-        }
-      }
-    },
-    "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/utxos/scan/status": {
+        },
+        "operationId": "ScanDerivationUTXOSet"
+      },
       "get": {
         "summary": "Get UTXO scan status",
         "description": "Get the status of a UTXO scan. Results are kept for 24 hours after completion.",
@@ -3649,7 +3634,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetDerivationUTXOScanStatus"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/utxos/wipe": {
@@ -3671,7 +3657,8 @@
           "200": {
             "description": "Successfully wiped all transactions"
           }
-        }
+        },
+        "operationId": "WipeDerivationSchemeTransactions"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/prune": {
@@ -3698,12 +3685,12 @@
                   "daysToKeep": {
                     "type": "number",
                     "format": "double",
-                    "default": 1.0,
+                    "default": 1,
                     "description": "The number of days of history to keep"
                   }
                 },
                 "example": {
-                  "daysToKeep": 1.0
+                  "daysToKeep": 1
                 }
               }
             }
@@ -3729,7 +3716,8 @@
               }
             }
           }
-        }
+        },
+        "operationId": "PruneDerivationSchemeTransactions"
       }
     },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/transactions/{txId}": {
@@ -3748,13 +3736,37 @@
             "$ref": "#/components/parameters/DerivationScheme"
           },
           {
-            "name": "txId",
-            "in": "path",
-            "required": true,
+            "$ref": "#/components/parameters/TransactionId"
+          },
+          {
+            "name": "includeTransaction",
+            "in": "query",
+            "required": false,
             "schema": {
-              "type": "string"
+              "type": "boolean",
+              "default": true
             },
-            "description": "The transaction ID to retrieve."
+            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `true`."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769702,
+            "description": "Indicates the earliest date from which transactions should be retrieved, (default: null, unix time)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769717,
+            "description": "Indicates the latest date up to which transactions should be retrieved, (default: null, unix time"
           }
         ],
         "responses": {
@@ -3778,10 +3790,11 @@
               }
             }
           }
-        }
+        },
+        "operationId": "GetDerivationSchemeTransaction"
       }
     },
-    "/cryptos/{cryptoCode}/node/rpc": {
+    "/v1/cryptos/{cryptoCode}/rpc": {
       "post": {
         "summary": "Proxy RPC call to the underlying node",
         "description": "Allows you to make RPC calls to the underlying cryptocurrency node (e.g., Bitcoin Core) via NBXplorer. This endpoint acts as a proxy, forwarding your RPC requests to the node and returning the node's responses.\n\nBy default, only a handful of RPC methods are authorized. You can use [configuration](https://github.com/btcpayserver/NBXplorer/blob/master/docs/Operator.md#configuration) `--btcexposerpc` or `NBXPLORER_BTCEXPOSERPC=1` to allow all methods.\n\nGo to [The JSON-RPC specification page](https://www.jsonrpc.org/specification) and the [Bitcoin Core RPC page](https://developer.bitcoin.org/reference/rpc) for more information.",
@@ -3801,6 +3814,7 @@
                 "$ref": "#/components/schemas/RpcRequest"
               },
               "example": {
+                "jsonrpc": "1.0",
                 "method": "getblockchaininfo",
                 "params": []
               }
@@ -3821,7 +3835,7 @@
                     "blocks": 600000,
                     "headers": 600000,
                     "bestblockhash": "0000000000000000000...",
-                    "difficulty": 123456789.0,
+                    "difficulty": 123456789,
                     "mediantime": 1609459200,
                     "verificationprogress": 0.999999,
                     "initialblockdownload": false,
@@ -3863,11 +3877,444 @@
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "error": "Unauthorized",
-                  "code": 401
+                  "httpCode": 401,
+                  "code": "request-error",
+                  "message": "Unauthorized"
                 }
               }
             }
+          }
+        },
+        "operationId": "ProxyNodeRPC"
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/addresses/{address}/utxos": {
+      "get": {
+        "summary": "Get UTXOs for an address",
+        "operationId": "GetAddressUTXOs",
+        "description": "Retrieves UTXOs associated with a tracked standalone address.",
+        "tags": [
+          "Addresses"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/Address"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "UTXOs retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UTXOChanges"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/addresses/{address}/metadata/{key}": {
+      "post": {
+        "summary": "Attach metadata to an address",
+        "tags": [
+          "Addresses"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/Address"
+          },
+          {
+            "$ref": "#/components/parameters/MetadataKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata attached successfully"
+          }
+        },
+        "operationId": "SetAddressMetadata"
+      },
+      "get": {
+        "summary": "Retrieve metadata from an address",
+        "tags": [
+          "Addresses"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/Address"
+          },
+          {
+            "$ref": "#/components/parameters/MetadataKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metadata retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Key not found"
+          }
+        },
+        "operationId": "GetAddressMetadata"
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/groups/{groupId}/metadata/{key}": {
+      "post": {
+        "summary": "Attach metadata to a group",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/GroupId"
+          },
+          {
+            "$ref": "#/components/parameters/MetadataKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata attached successfully"
+          }
+        },
+        "operationId": "SetCryptoGroupMetadata"
+      },
+      "get": {
+        "summary": "Retrieve metadata from a group",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/GroupId"
+          },
+          {
+            "$ref": "#/components/parameters/MetadataKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metadata retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Key not found"
+          }
+        },
+        "operationId": "GetCryptoGroupMetadata"
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/groups/{groupId}": {
+      "get": {
+        "summary": "Check whether a group is tracked",
+        "description": "Checks whether the specified group exists for the selected chain.",
+        "tags": [
+          "Groups"
+        ],
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/GroupId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The group is being tracked."
+          },
+          "404": {
+            "description": "The group isn't being tracked."
+          }
+        },
+        "operationId": "IsGroupTracked"
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/addresses/{address}/transactions": {
+      "get": {
+        "summary": "Get transactions for an address",
+        "operationId": "ListAddressTransactions",
+        "description": "Retrieves transactions associated with the specified an address.",
+        "tags": [
+          "Addresses",
+          "Transactions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/Address"
+          },
+          {
+            "name": "includeTransaction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `true`."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769702,
+            "description": "Indicates the earliest date from which transactions should be retrieved, (default: null, unix time)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769717,
+            "description": "Indicates the latest date up to which transactions should be retrieved, (default: null, unix time"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTransactionsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Derivation scheme not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "httpCode": 404,
+                  "code": "request-error",
+                  "message": "Derivation scheme not found."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/addresses/{address}/transactions/{txId}": {
+      "get": {
+        "summary": "Get a transaction for an address",
+        "description": "Retrieves a transaction associated with the specified an address.",
+        "tags": [
+          "Addresses",
+          "Transactions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/Address"
+          },
+          {
+            "$ref": "#/components/parameters/TransactionId"
+          },
+          {
+            "name": "includeTransaction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `true`."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769702,
+            "description": "Indicates the earliest date from which transactions should be retrieved, (default: null, unix time)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769717,
+            "description": "Indicates the latest date up to which transactions should be retrieved, (default: null, unix time"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction details retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "GetAddressTransaction"
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/groups/{groupId}/transactions/{txId}": {
+      "get": {
+        "summary": "Get a transaction for a group",
+        "description": "Retrieves a transaction associated with the specified a group.",
+        "tags": [
+          "Groups",
+          "Transactions"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          },
+          {
+            "$ref": "#/components/parameters/GroupId"
+          },
+          {
+            "$ref": "#/components/parameters/TransactionId"
+          },
+          {
+            "name": "includeTransaction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Optional. If set to `true`, each transaction in the response will include the raw transaction data in hexadecimal format (`transaction` field). Default is `true`."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769702,
+            "description": "Indicates the earliest date from which transactions should be retrieved, (default: null, unix time)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1732769717,
+            "description": "Indicates the latest date up to which transactions should be retrieved, (default: null, unix time"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction details retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "GetGroupTransaction"
+      }
+    },
+    "/v1/cryptos/{cryptoCode}/connect": {
+      "get": {
+        "summary": "WebSocket connection for one chain",
+        "operationId": "ConnectCryptoWebSocket",
+        "description": "Establishes a WebSocket connection to receive real-time events for the specified cryptocurrency. (Check [Query Event Stream for the data format](#tag/Events/operation/EventStream))",
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CryptoCode"
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "Switching protocols to WebSocket."
           }
         }
       }
