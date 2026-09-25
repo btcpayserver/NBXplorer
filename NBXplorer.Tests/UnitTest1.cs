@@ -3981,6 +3981,24 @@ namespace NBXplorer.Tests
 
 
 		[Fact]
+		public async Task CanGetUnusedWhenLegacyRPCImportIsUnavailable()
+		{
+			using (var tester = CreateTesterNoAutoStart())
+			{
+				tester.RPCWalletType = RPCWalletType.Descriptors;
+				tester.Start();
+				var derivation = (await tester.Client.GenerateWalletAsync(new GenerateWalletRequest()
+				{
+					SavePrivateKeys = true,
+					ImportKeysToRPC = true
+				})).DerivationScheme;
+				// Wallets generated against a legacy RPC wallet keep this mode, even after Bitcoin Core removed importprivkey (v30)
+				await tester.Client.SetMetadataAsync(derivation, WellknownMetadataKeys.ImportAddressToRPC, "Legacy");
+				Assert.NotNull(await tester.Client.GetUnusedAsync(derivation, DerivationFeature.Deposit, reserve: true));
+			}
+		}
+
+		[Fact]
 		public async Task CanGenerateWithRPCTracking()
 		{
 			using (var tester = CreateTesterNoAutoStart())
@@ -4141,7 +4159,7 @@ namespace NBXplorer.Tests
 
 				var birthdate = DateTimeOffset.ParseExact(await tester.Client.GetMetadataAsync<string>(wallet.DerivationScheme, WellknownMetadataKeys.Birthdate), "O", CultureInfo.InvariantCulture);
 				Assert.True(DateTimeOffset.UtcNow - birthdate < TimeSpan.FromSeconds(60));
-				Assert.Equal(walletType == RPCWalletType.Descriptors ? "Descriptors" : "Legacy", await tester.Client.GetMetadataAsync<string>(wallet.DerivationScheme, WellknownMetadataKeys.ImportAddressToRPC));
+				Assert.Equal("Descriptors", await tester.Client.GetMetadataAsync<string>(wallet.DerivationScheme, WellknownMetadataKeys.ImportAddressToRPC));
 
 				Logs.Tester.LogInformation("Let's check if psbt are properly rooted automatically");
 				txid = await tester.SendToAddressAsync(firstGenerated.Address, Money.Coins(1.0m));

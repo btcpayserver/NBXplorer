@@ -269,14 +269,17 @@ There is a simple use case documented on [Blockchain Programming in C#](https://
 
 ## How to run the tests?
 
-This is easy, from repo directory:
+From the repository directory, start the test dependencies and run the tests:
 
 ```bash
 cd NBXplorer.Tests
+docker-compose up -d dev
 dotnet test
 ```
 
-The tests can take long the first time, as it download Bitcoin Core binaries. (Between 5 and 10 minutes)
+The `dev` service starts the PostgreSQL test database and the other services required by the test environment. When finished, stop them with `docker-compose down`.
+
+The tests can take long the first time, as they download Bitcoin Core binaries. (Between 5 and 10 minutes)
 
 ## How to add support to my altcoin
 

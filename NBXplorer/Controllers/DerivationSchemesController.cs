@@ -227,6 +227,7 @@ namespace NBXplorer.Controllers
 			if (!network.NBitcoinNetwork.Consensus.SupportSegwit && request.ScriptPubKeyType != ScriptPubKeyType.Legacy)
 				throw new NBXplorerException(new NBXplorerError(400, "segwit-not-supported", "Segwit is not supported, please explicitely set scriptPubKeyType to Legacy"));
 			var repo = RepositoryProvider.GetRepository(network);
+			var importAddressToRPC = await GetImportAddressToRPC(request, network);
 			Mnemonic mnemonic = null;
 			if (request.ExistingMnemonic != null)
 			{
@@ -267,7 +268,6 @@ namespace NBXplorer.Controllers
 			}
 			var accountKeyPath = new RootedKeyPath(masterKey.GetPublicKey().GetHDFingerPrint(), keyPath);
 			saveMetadata.Add(repo.SaveMetadata(derivationTrackedSource, WellknownMetadataKeys.AccountKeyPath, accountKeyPath));
-			var importAddressToRPC = await GetImportAddressToRPC(request, network);
 			saveMetadata.Add(repo.SaveMetadata<string>(derivationTrackedSource, WellknownMetadataKeys.ImportAddressToRPC, (importAddressToRPC?.ToString() ?? "False")));
 			var descriptor = GetDescriptor(accountKeyPath, accountKey.Neuter(), request.ScriptPubKeyType.Value);
 			saveMetadata.Add(repo.SaveMetadata<string>(derivationTrackedSource, WellknownMetadataKeys.AccountDescriptor, descriptor));
@@ -326,9 +326,7 @@ namespace NBXplorer.Controllers
 							throw new NBXplorerError(400, "wallet-unavailable", $"Your RPC wallet must include private keys, but savePrivateKeys is false").AsException();
 					}
 					else
-					{
-						importAddressToRPC = ImportRPCMode.Legacy;
-					}
+						throw new NBXplorerError(400, "wallet-unavailable", "Your RPC wallet must be a descriptor wallet").AsException();
 				}
 				catch (RPCException ex) when (ex.RPCCode == RPCErrorCode.RPC_METHOD_NOT_FOUND)
 				{
