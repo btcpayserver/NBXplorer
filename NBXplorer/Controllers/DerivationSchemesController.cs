@@ -106,7 +106,6 @@ namespace NBXplorer.Controllers
 			return Ok();
 		}
 
-		[HttpPost("utxos/scan")]
 		[HttpPost($"~/v1/{CommonRoutes.DerivationEndpoint}/utxos/scan")]
 		[TrackedSourceContext.TrackedSourceContextRequirement(requireRPC: true, allowedTrackedSourceTypes: typeof(DerivationSchemeTrackedSource))]
 		public IActionResult ScanUTXOSet(TrackedSourceContext trackedSourceContext, int? batchSize = null, int? gapLimit = null, int? from = null)

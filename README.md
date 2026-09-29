@@ -1,307 +1,44 @@
 # NBXplorer
 
 [![NuGet](https://img.shields.io/nuget/v/NBxplorer.Client.svg)](https://www.nuget.org/packages/NBxplorer.Client)
-[![Docker Automated buil](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/nicolasdorier/nbxplorer/)
+[![Docker pulls](https://img.shields.io/docker/pulls/nicolasdorier/nbxplorer.svg)](https://hub.docker.com/r/nicolasdorier/nbxplorer/)
 [![CI](https://github.com/btcpayserver/NBXplorer/actions/workflows/ci.yml/badge.svg)](https://github.com/btcpayserver/NBXplorer/actions/workflows/ci.yml)
 
-A minimalist UTXO tracker for HD wallets.
-The goal is to provide a flexible, .NET-based UTXO tracker for HD wallets.
-The explorer supports P2SH, P2PKH, P2WPKH, P2WSH, Taproot and multi-signature derivations.
+NBXplorer is a minimalist Bitcoin UTXO tracker for HD wallets. It connects to a trusted full node, watches only the wallets and addresses you register, and exposes their transactions, UTXOs, and balances through a REST API.
 
-It works on a pruned node and indexes only what you track.
+NBXplorer supports P2PKH, P2SH, SegWit, Taproot, multisig, and [wallet policies](https://github.com/bitcoin/bips/blob/master/bip-0388.mediawiki). It works with pruned nodes, stores its index in PostgreSQL, and can track many wallets without importing them into Bitcoin Core.
 
-This explorer is not intended to be exposed to the internet; it should be used as an infrastructure tool for tracking the UTXOs of your own service.
+> [!WARNING]
+> NBXplorer is an infrastructure service and is not intended to be exposed directly to the internet. Keep it on a trusted network and place authentication and transport security at your application boundary.
 
-## Typical usage
+## Documentation
 
-You start by [Creating a wallet (hot wallet)](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/GenerateWallet), or [Tracking a derivation scheme (cold wallet)](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/Track).
+Start at the [documentation index](docs/README.md), or go directly to:
 
-Second, [Get the next unused address](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/GetUnused) to get paid.
+* [Operator guide](docs/Operator.md) for installation, configuration, supported chains, and rescanning
+* [API integrator guide](docs/API.md) for tracked sources, derivation schemes, authentication, and client libraries
+* [REST API reference](https://btcpayserver.github.io/NBXplorer/) for endpoints and schemas
+* [PostgreSQL schema](docs/Postgres-Schema.md) for direct database access
+* [Contributing](CONTRIBUTING.md) for building, testing, and adding chain support
 
-Listen to events through [Polling](https://btcpayserver.github.io/NBXplorer/#tag/Events/operation/GetLatest), [Long Polling](https://btcpayserver.github.io/NBXplorer/#tag/Events/operation/EventStream) or [Web Sockets](https://btcpayserver.github.io/NBXplorer/#tag/Events/operation/WebSocket).
+## Typical workflow
 
-You can then [List transactions](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/ListTransactionDerivationScheme), [List UTXOs](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/ListUTXOsDerivationScheme), or [Create a PSBT](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/CreatePSBT) for your app to sign.
+1. Track a wallet derivation scheme, a standalone address, or a group of tracked sources.
+2. Request the next unused address when receiving a payment.
+3. Consume transaction and block events through polling, long polling, or WebSockets.
+4. Query transactions, balances, and UTXOs.
+5. Create a PSBT for your application to sign, then broadcast the signed transaction.
 
-When the transaction is signed, [Broadcast it](https://btcpayserver.github.io/NBXplorer/#tag/Transactions/operation/Broadcast).
+The [API integrator guide](docs/API.md) explains these concepts, and the [REST API reference](https://btcpayserver.github.io/NBXplorer/) documents the individual operations.
 
-You can also track multiple derivation schemes or individual addresses by [Creating a group](https://btcpayserver.github.io/NBXplorer/#tag/Groups/operation/Create).
+## When to use NBXplorer
 
-## General features
+NBXplorer is designed for services that need private, self-hosted wallet tracking without indexing the entire blockchain.
 
-* Miniscript support via [Wallet Policies (BIP0388)](https://github.com/bitcoin/bips/blob/master/bip-0388.mediawiki).
-* Can pass arguments via environment variable, command line or configuration file
-* Automatically reconnect to your node if the connection goes temporarily down
-* An easy to use [REST API](https://btcpayserver.github.io/NBXplorer/) ([Overview](./docs/API.md).)
-* Persistence via [Postgres](./docs/docs/Postgres-Schema.md)
-* Connect via RPC to broadcast transaction instead of using the P2P protocol like this example
-* Connect via RPC to your trusted node to get the proper fee rate.
-* Altcoin support
-* Huge test suite
-* Pruning of transaction data (in practice, we don't need to save the whole transaction, only the spent outpoint and received coin for the wallet)
-* Multi-wallet
-* Flexible address generation schemes (multisig, segwit, legacy etc...)
-* Pruning for big wallets (Removal of tracked transaction which do not impact the resulting UTXO set)
+Compared with an Electrum server, NBXplorer can run on a pruned node, supports many wallets, and provides wallet-oriented APIs without requiring the Electrum protocol. Compared with Bitcoin Core wallets, it keeps wallet tracking separate from the node and is designed to handle large numbers of addresses and wallets. Unlike a hosted API, it does not require sharing financial activity with a third party.
 
-It currently supports the following altcoins:
+Bitcoin is the primary supported chain. NBXplorer can also index Liquid and several Bitcoin-derived networks; see the [operator guide](docs/Operator.md#supported-chains).
 
-* Althash
-* Argoneum
-* BCash (also known as Bitcoin Cash)
-* BGold (also known as Bitcoin Gold)
-* BitCore
-* Chaincoin
-* ColossusXT
-* Dash
-* Dogecoin
-* Feathercoin
-* Gobyte
-* Groestlcoin
-* Litecoin
-* Monacoin
-* MonetaryUnit
-* Monoeci
-* Pepecoin
-* Polis
-* Qtum
-* Terracoin
-* Ufo
-* Viacoin
+## License
 
-Read our [API Specification](https://btcpayserver.github.io/NBXplorer/).
-
-## Prerequisite
-
-* Install [.NET SDK v10.0 or above](https://www.microsoft.com/net/download)
-* Bitcoin Core instance synched and running (at least 24.0).
-* PostgresSQL v13+
-
-Use `--postgres` flag to setup the connection string. See [schema documentation](./docs/Postgres-Schema.md).
-
-## API Specification
-
-Read our [API Specification](./docs/API.md).
-
-## How to build and run?
-
-If you are using Bitcoin core default settings:
-
-On Powershell:
-
-```pwsh
-.\build.ps1
-```
-
-On Linux:
-
-```bash
-./build.sh
-```
-
-Then to run:
-
-On Powershell:
-
-```pwsh
-.\run.ps1 --help
-```
-
-On Linux:
-
-```bash
-./run.sh --help
-```
-
-Example, if you have ltc node and btc node on regtest (default configuration), and want to connect to them: (see documentation for other options in the [postgres connection string](https://www.npgsql.org/doc/connection-string-parameters.html))
-
-```bash
-./run.sh --chains=btc,ltc --network=regtest --postgres "User ID=postgres;Host=127.0.0.1;Port=5432;Database=nbxplorer"
-```
-
-## How to use the API?
-
-Check [the API documentation](https://btcpayserver.github.io/NBXplorer/), you can then use any client library:
-
-* [NBXplorer.NodeJS](https://github.com/junderw/NBXplorer.NodeJS) for NodeJS clients.
-* [NBXplorer.Client](https://www.nuget.org/packages/NBxplorer.Client) for .NET clients.
-
-Here is [a small C# example](Examples/MultiSig/Program.cs) showing a 2-2 multisig with Alice and Bob that you can run on regtest.
-
-## With Docker
-
-Use [our image](https://hub.docker.com/r/nicolasdorier/nbxplorer/).
-You can check [the sample](docker-compose.regtest.yml) for configuring and composing it bitcoin core.
-
-## How to develop on it?
-
-If you are on Windows, I recommend Visual Studio 2022 (17.8.0).
-If you are on other platform and want lightweight environment, use [Visual Studio Code](https://code.visualstudio.com/).
-If you are hardcore, you can code on vim.
-
-I like Visual Studio Code and Visual Studio 2022 as it allows me to debug in step by step.
-
-## How to configure?
-
-NBXplorer supports configuration through command line arguments, configuration file, or environment variables.
-
-### Configuration file
-
-If you are not using standard install for bitcoind, you will have to change the configuration file:
-In Windows it is located in
-
-```pwsh
-C:\Users\<user>\AppData\Roaming\NBXplorer\<network>\settings.config
-```
-
-On linux or mac:
-
-```bash
-~/.nbxplorer/<network>/settings.config
-```
-
-The default configuration assumes `mainnet` with only `btc` chain supported, and uses the default settings of bitcoind.
-
-You can change the location of the configuration file with the `--conf=pathToConf` command line argument.
-
-### Command line parameters
-
-Please note that NBXplorer uses cookie authentication by default. If you run your Bitcoin/Litecoin/Dash nodes using their daemon (like `bitcoind`, `litecoind` or `dashd`), they generate a new cookie every time you start them, and that should work without any extra configuration.
-If you run the node(s) using the GUI versions, like Bitcoin\Litecoin\Dash Core Qt with the `-server` parameter while you set the rpcusername and rpcpassword in their `.conf` files, you must set those values for every crypto you are planning to support.
-See samples below.
-
-#### Run from source (requires .NET Core SDK)
-
-You should use `run.ps1` (Windows) or `run.sh` (Linux) to execute NBXplorer, but you can also execute it manually with the following command:
-```dotnet run --no-launch-profile -p .\NBXplorer\NBXplorer.csproj -- <parameters>```
-
-#### Run using built DLL (requires .NET Core Runtime only)
-
-If you already have a compiled DLL, you can run the executable with the following command:
-```dotnet NBXplorer.dll <parameters>```
-
-#### Sample parameters
-
-Running NBXplorer HTTP server on port 20300, connecting to the BTC mainnet node locally.
-```--port=20300 --network=mainnet --btcnodeendpoint=127.0.0.1:32939```
-
-Running NBXplorer on testnet, supporting Bitcoin, Litecoin and Dash, using cookie authentication for BTC and LTC, and RPC username and password for Dash, connecting to all of them locally.
-```--chains=btc,ltc,dash --network=testnet --dashrpcuser=myuser --dashrpcpassword=mypassword```
-
-### Environment variables
-
-The same settings as above, for example `export NBXPLORER_PORT=20300`. This is usefull for configuring docker.
-
-## How to Run
-
-### Command Line
-
-You can use the [dotnet](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet) command which is part of .NET Core to run NBXplorer. To run from source you must have the .NET Core SDK installed e.g.
-```dotnet run NBXplorer.dll```
-As described above you may add configuration parameters if desired.
-
-If you have a compiled version of NBXplorer you should have a file in your build folder named NBXplorer.dll. This cannot itself be directly executed on the command line as it is not an executable file. Instead we can use the `dotnet` runtime to execute the dll file.
-
-e.g. `dotnet NBXplorer.dll`
-
-## Important Note
-
-This tool will only start scanning from the configured `startheight`. (By default, the height of the blockchain during your first run)
-This means that you might not see old payments from your HD key.
-
-If you need to see old payments, you need to configure `--[crypto]startheight` to a specific height of your choice, then run it again with `--[crypto]rescan`, e.g.
-`./run.sh --chains=ltc --ltcrescan --ltcstartheight=101`
-
-## How to query?
-
-### Using Postman
-
-[Postman](https://www.getpostman.com) is a useful tool for testing and experimenting with REST API's.
-
-You can test the [NBXplorer API](https://btcpayserver.github.io/NBXplorer/) quickly and easily using Postman.
-
-If you use cookie authentication (enabled by default) in your locally run NBXplorer, you need to set that up in Postman:
-
-* Run NBXplorer and locate you cookie file (NBXplorer will generate a new Cookie file each time it runs in [its default data folder](./docs/API.md#authentication))
-* In Postman create a new GET API test
-* In Authorization select *Basic Auth*, you should see 2 input boxes for username and password
-* Open your cookie file with a text editor e.g. Notepad on windows . You should see a cookie string e.g. `__cookie__:0ff9cd83a5ac7c19a6b56a3d1e7a5c96e113d42dba7720a1f72a3a5e8c4b6c66`
-* Back in Postman paste the `__cookie__` part of your cookie file into username (whatever comes before the :)
-* Paste the Hex string (after the : ) into the password box
-* Click the Update Request button in Postman - this will force Postman to generate the correct HTTP headers based on your cookie details
-* You should now see a new entry in the Headers section with a Key of *Authorization* and Value of *Basic xxxxxxxxx* where the string after `Basic` will be your Base64 encoded username and password.
-* Enter the API URL you are going to test
-
-You can also disable authentication in NBXplorer for testing with the `--noauth` parameter. This makes testing quicker:
-
-* Run NBXplorer with the `--noauth` command line argument or the environment variable `NBXPLORER_NOAUTH=1`
-* In Postman create a new GET API test
-* In Authorization select *No Auth*
-* Enter the API URL you are going to test
-
-You are now ready to test the API - it is easiest to start with something simple such as the fees endpoint e.g.
-
-```http://localhost:24444/v1/cryptos/btc/fees/3```
-
-this should return a JSON payload e.g.
-
-```json
-{
-    "feeRate": 9,
-    "blockCount": 3
-}
-```
-
-#### Troubleshooting
-
-If you receive a 401 Unauthorized then your cookie data is not working. Check you are using the current cookie by opening the cookie file again - also check the date/time of the cookie file to ensure it is the latest cookie (generated when you launched NBXplorer).
-
-If you receive a 404 or timeout then Postman cannot see the endpoint
-
-* are you using the correct Port ?
-* are you running postman on localhost ?
-
-## Client API
-
-A better documentation is on the way, for now the only documentation is the client API in C# on [nuget](https://www.nuget.org/packages/NBxplorer.Client).
-The `ExplorerClient` classes allows you to query unused addresses, and the UTXO of an HD PubKey.
-You can take a look at [the tests](https://github.com/btcpayserver/NBXplorer/blob/master/NBXplorer.Tests/UnitTest1.cs) to see how it works.
-
-There is a simple use case documented on [Blockchain Programming in C#](https://programmingblockchain.gitbooks.io/programmingblockchain/content/wallet/web-api.html).
-
-## How to run the tests?
-
-From the repository directory, start the test dependencies and run the tests:
-
-```bash
-cd NBXplorer.Tests
-docker-compose up -d dev
-dotnet test
-```
-
-The `dev` service starts the PostgreSQL test database and the other services required by the test environment. When finished, stop them with `docker-compose down`.
-
-The tests can take long the first time, as they download Bitcoin Core binaries. (Between 5 and 10 minutes)
-
-## How to add support to my altcoin
-
-First you need to add support for your altcoin to `NBitcoin.Altcoins`. (See [here](https://github.com/MetacoSA/NBitcoin/tree/master/NBitcoin.Altcoins)).
-
-Once this is done and `NBXplorer` updated to use the last version of `NBitcoin.Altcoins`, follow [Litecoin example](NBXplorer.Client/NBXplorerNetworkProvider.Litecoin.cs).
-
-If you want to test if everything is working, modify [ServerTester.Environment.cs](NBXplorer.Tests/ServerTester.Environment.cs) to match your altcoin.
-
-Then run the tests.
-
-## What about alternatives to NBXplorer?
-
-1. `Electrum wallet` requires an unpruned node with indexing, which is space-intensive and may be difficult to sync.
-2. `Electrum wallet` only supports a single cryptocurrency on a single server. If you are an exchange, you would end up running multiple versions of barely maintained Electrum instances.
-3. `Personal Electrum Server` supports only a single wallet.
-4. `Electrum protocol` is cumbersome for HD wallets.
-5. `Bitcoin Core RPC` is inflexible and difficult to use. It also scales poorly when a wallet has too many addresses or UTXOs.
-6. `Bitcoin Core RPC` supports multiple wallets but isn't designed to handle thousands of them. Having too many wallets will not scale.
-7. While NBXplorer exposes an [API](https://btcpayserver.github.io/NBXplorer/), it also allows you to query the data using the most expressive and flexible language designed for this purpose: [SQL](./docs/docs/Postgres-Schema.md).
-8. Alternative SaaS infrastructure providers depend on third parties, forcing you to compromise your privacy by sharing financial information while relinquishing control over API changes and service level agreements (SLAs).
-
-## Licence
-
-This project is under MIT License.
+NBXplorer is licensed under the [MIT License](LICENSE).

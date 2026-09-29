@@ -193,7 +193,6 @@ namespace NBXplorer.Controllers
 
 
 		[HttpPost("metadata/{key}")]
-		[HttpPost($"~/v1/{CommonRoutes.GroupEndpoint}/metadata/{{key}}")]
 		public async Task<IActionResult> SetMetadata(TrackedSourceContext trackedSourceContext, string key, [FromBody] JToken value = null)
 		{
 			await trackedSourceContext.Repository.SaveMetadata(trackedSourceContext.TrackedSource, key, value);
@@ -201,7 +200,6 @@ namespace NBXplorer.Controllers
 		}
 
 		[HttpGet("metadata/{key}")]
-		[HttpGet($"~/v1/{CommonRoutes.GroupEndpoint}/metadata/{{key}}")]
 		public async Task<IActionResult> GetMetadata(TrackedSourceContext trackedSourceContext, string key)
 		{
 			var result = await trackedSourceContext.Repository.GetMetadata<JToken>(trackedSourceContext.TrackedSource, key);
