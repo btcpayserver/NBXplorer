@@ -8,14 +8,14 @@ This guide explains the domain model and integration flow. Use the [REST API ref
 
 A typical integration follows this lifecycle:
 
-1. Register a derivation scheme, standalone address, or group.
-2. Request and reserve the next unused address when receiving a payment.
-3. Consume transaction and block events through polling, long polling, or WebSockets.
-4. Query the tracked source's transactions, balances, and UTXOs.
-5. Create a PSBT for the application or hardware wallet to sign.
-6. Submit the signed transaction for broadcast.
+1. [Generate a wallet](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/GenerateWallet) or [track an existing derivation scheme](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/Track).
+2. [Request and reserve the next unused address](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/GetUnused) when receiving a payment.
+3. Consume transaction and block events through [polling](https://btcpayserver.github.io/NBXplorer/#tag/Events/operation/GetLatest), [long polling](https://btcpayserver.github.io/NBXplorer/#tag/Events/operation/EventStream), or [WebSockets](https://btcpayserver.github.io/NBXplorer/#tag/Events/operation/WebSocket).
+4. Query the derivation scheme's [transactions](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/ListTransactionDerivationScheme), [balance](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/GetDerivationSchemeBalance), and [UTXOs](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/ListUTXOsDerivationScheme).
+5. [Create a PSBT](https://btcpayserver.github.io/NBXplorer/#tag/Derivations/operation/CreatePSBT) for the application or hardware wallet to sign.
+6. Submit the signed transaction for [broadcast](https://btcpayserver.github.io/NBXplorer/#tag/Transactions/operation/BroadcastTransaction).
 
-These operations are grouped by tracked-source type in the [REST API reference](https://btcpayserver.github.io/NBXplorer/).
+Groups and standalone addresses provide separate tracking and query operations; they do not reserve unused addresses or create PSBTs.
 
 ## Tracked sources
 
@@ -89,13 +89,13 @@ Derivation schemes are part of API URL paths and must be URL encoded by the HTTP
 
 ## Groups
 
-A group combines multiple tracked sources into one logical tracked source. It can contain derivation schemes, standalone addresses, and other groups. Scripts and their related transactions and UTXOs flow from child tracked sources into the parent group.
+A group combines multiple tracked sources into one logical tracked source. [Create an empty group](https://btcpayserver.github.io/NBXplorer/#tag/Groups/operation/Create), then [add derivation schemes or nested groups](https://btcpayserver.github.io/NBXplorer/#tag/Groups/operation/AddGroupChildren) or [individual addresses](https://btcpayserver.github.io/NBXplorer/#tag/Groups/operation/AddAddress). Scripts and their related transactions and UTXOs flow from child tracked sources into the parent group.
 
-Groups may be nested, but cannot contain cycles. Avoid adding an excessive number of children when an application frequently retrieves the full group because the response includes its children.
+Groups may be nested, but cannot contain cycles. Avoid adding an excessive number of children when an application frequently retrieves the full group because the response includes its children. Group-level operations can query [transactions](https://btcpayserver.github.io/NBXplorer/#tag/Groups/operation/ListGroupTransactions), [balances](https://btcpayserver.github.io/NBXplorer/#tag/Groups/operation/GetGroupBalance), and [UTXOs](https://btcpayserver.github.io/NBXplorer/#tag/Groups/operation/GetGroupUTXOs).
 
 ## Standalone addresses
 
-A standalone address tracks one address without a derivation scheme. It behaves like other tracked sources for transaction and UTXO queries and is represented as `ADDRESS:<address>`.
+A standalone address tracks one address without a derivation scheme. [Register the address](https://btcpayserver.github.io/NBXplorer/#tag/Addresses/operation/TrackSingleAddress), then query its [transactions](https://btcpayserver.github.io/NBXplorer/#tag/Addresses/operation/ListAddressTransactions), [balance](https://btcpayserver.github.io/NBXplorer/#tag/Legacy/operation/GetAddressBalance), or [UTXOs](https://btcpayserver.github.io/NBXplorer/#tag/Addresses/operation/GetAddressUTXOs). It is represented as `ADDRESS:<address>`.
 
 ## Authentication
 

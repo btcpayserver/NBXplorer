@@ -10,18 +10,12 @@ Configuration-file keys, environment variables, and command-line options feed
 the same configuration system. Environment variables use the `NBXPLORER_`
 prefix. Run `NBXplorer --help` to inspect the deployed version directly.
 
-The legacy configuration-only `mutinynet` boolean can be set as
-`mutinynet=1` or `NBXPLORER_MUTINYNET=1`; prefer `network=mutinynet`.
-
 ## Process and network
 
 | Command line | Configuration file | Environment | Description |
 |---|---|---|---|
 | `-? \| -h \| --help` | N/A | N/A | Show help information |
-| `-n \| --network` | `network` | `NBXPLORER_NETWORK` | Set the network among (mainnet,testnet,regtest) (default: mainnet) |
-| `--testnet \| -testnet` | `testnet` | `NBXPLORER_TESTNET` | Use testnet |
-| `--regtest \| -regtest` | `regtest` | `NBXPLORER_REGTEST` | Use regtest |
-| `--signet \| -signet` | `signet` | `NBXPLORER_SIGNET` | Use signet |
+| `-n \| --network` | `network` | `NBXPLORER_NETWORK` | Set the network among (mainnet,testnet,regtest,signet) (default: mainnet) |
 | `--chains` | `chains` | `NBXPLORER_CHAINS` | Chains to support comma separated (default: btc, available: agm,btc,btx,ltc,doge,pepe,bch,grs,btg,dash,trc,polis,mona,ftc,ufo,via,xmcc,gbx,colx,chc,lbtc,qtum,html,mue) |
 | `-c \| --conf` | `conf` | `NBXPLORER_CONF` | The configuration file |
 | `-p \| --port` | `port` | `NBXPLORER_PORT` | The port on which to listen |
@@ -52,20 +46,11 @@ The legacy configuration-only `mutinynet` boolean can be set as
 | `--mingapsize` | `mingapsize` | `NBXPLORER_MINGAPSIZE` | The minimum gap address count on which the explorer will track derivation schemes (default: 20) |
 | `--trimevents` | `trimevents` | `NBXPLORER_TRIMEVENTS` | When NBXplorer starts, NBXplorer will remove old events to reach this count. No trimming if equals to less than 0 (default: -1) |
 
-## SOCKS proxy
-
-| Command line | Configuration file | Environment | Description |
-|---|---|---|---|
-| `--socksendpoint` | `socks.endpoint` | `NBXPLORER_SOCKSENDPOINT` | Configure a SocksV5 endpoint as proxy to connect to P2P |
-| `--socksuser` | `socks.user` | `NBXPLORER_SOCKSUSER` | SocksV5 username credential |
-| `--sockspassword` | `socks.password` | `NBXPLORER_SOCKSPASSWORD` | SocksV5 password credential |
-
 ## Logging and diagnostics
 
 | Command line | Configuration file | Environment | Description |
 |---|---|---|---|
 | `--signalfilesdir` | `signalfilesdir` | `NBXPLORER_SIGNALFILESDIR` | The directory where files signaling if a chain is ready is created (default: the network specific datadir) |
-| `--rpcnotest` | `rpcnotest` | `NBXPLORER_RPCNOTEST` | Deprecated; this option has no effect |
 | `-v \| --verbose` | `verbose` | `NBXPLORER_VERBOSE` | Verbose logs (default: false) |
 
 ## Chain-specific node and RPC settings

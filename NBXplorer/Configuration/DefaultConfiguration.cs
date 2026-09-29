@@ -20,7 +20,7 @@ namespace NBXplorer.Configuration
 				Name = "NBXplorer"
 			};
 			app.HelpOption("-? | -h | --help");
-			app.Option("-n | --network", $"Set the network among (mainnet,testnet,regtest) (default: mainnet)", CommandOptionType.SingleValue);
+			app.Option("-n | --network", $"Set the network among (mainnet,testnet,regtest,signet) (default: mainnet)", CommandOptionType.SingleValue);
 			app.Option("--testnet | -testnet", $"Use testnet", CommandOptionType.BoolValue);
 			app.Option("--regtest | -regtest", $"Use regtest", CommandOptionType.BoolValue);
 			app.Option("--signet | -signet", $"Use signet", CommandOptionType.BoolValue);
@@ -50,7 +50,6 @@ namespace NBXplorer.Configuration
 			app.Option("--signalfilesdir", $"The directory where files signaling if a chain is ready is created (default: the network specific datadir)", CommandOptionType.SingleValue);
 			app.Option("--noauth", $"Disable cookie authentication", CommandOptionType.BoolValue);
 			app.Option("--instancename", $"Define an instance name for this server that, if not null, will show in status response and in HTTP response headers (default: empty)", CommandOptionType.SingleValue);
-			app.Option("--rpcnotest", $"Deprecated; this option has no effect", CommandOptionType.SingleValue);
 			app.Option("--exposerpc", $"Expose the node RPC through the REST API (default: false)", CommandOptionType.SingleValue);
 			app.Option("--postgres", $"Use PostgresSQL backend. Set the connection string of the postgres backend (For example: \"User ID=postgres;Host=postgres;Port=5432;Application Name=nbxplorer;Database=nbxplorer\", more options on https://www.npgsql.org/doc/connection-string-parameters.html)", CommandOptionType.SingleValue);
 			app.Option("--socksendpoint", "Configure a SocksV5 endpoint as proxy to connect to P2P", CommandOptionType.SingleValue);

@@ -115,7 +115,7 @@ namespace NBXplorer.Tests
 				throw;
 			}
 		}
-		
+
 		static int FreeTcpPort()
 		{
 			TcpListener l = new TcpListener(IPAddress.Loopback, 0);
@@ -148,7 +148,6 @@ namespace NBXplorer.Tests
 			keyValues.Add(($"{CryptoCode.ToLowerInvariant()}rpcurl", Explorer.CreateRPCClient().Address.AbsoluteUri));
 			keyValues.Add(($"{CryptoCode.ToLowerInvariant()}rpcdefaultwallet", "default"));
 			keyValues.Add(("exposerpc", "1"));
-			keyValues.Add(("rpcnotest", "1"));
 			keyValues.Add(("trimevents", TrimEvents.ToString()));
 			keyValues.Add(("mingapsize", "3"));
 			keyValues.Add(("maxgapsize", "8"));

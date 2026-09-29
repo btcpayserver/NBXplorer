@@ -14,12 +14,15 @@ public class DocumentationTests
 {
 	private static readonly (string Title, HashSet<string> Names)[] ConfigurationCategories =
 	[
-		("Process and network", ["help", "network", "testnet", "regtest", "signet", "chains", "conf", "port", "bind", "datadir"]),
+		("Process and network", ["help", "network", "chains", "conf", "port", "bind", "datadir"]),
 		("Database", ["postgres"]),
 		("HTTP and authentication", ["noauth", "instancename", "exposerpc"]),
 		("Wallet tracking and scanning", ["nowarmup", "customkeypathtemplate", "maxgapsize", "mingapsize", "trimevents"]),
-		("SOCKS proxy", ["socksendpoint", "socksuser", "sockspassword"]),
-		("Logging and diagnostics", ["signalfilesdir", "rpcnotest", "verbose"])
+		("Logging and diagnostics", ["signalfilesdir", "verbose"])
+	];
+	private static readonly HashSet<string> UndocumentedOptions =
+	[
+		"testnet", "regtest", "signet", "socksendpoint", "socksuser", "sockspassword"
 	];
 
 	private static readonly string[] ChainOptionSuffixes =
@@ -57,7 +60,9 @@ public class DocumentationTests
 			.ToArray();
 		var globalNames = ConfigurationCategories.SelectMany(category => category.Names).ToHashSet();
 		var chainOptions = options.Where(option => TryGetChainOption(option.Name, cryptoCodes, out _, out _)).ToArray();
-		var unknown = options.Where(option => !globalNames.Contains(option.Name) && !chainOptions.Contains(option)).Select(option => option.Name).ToArray();
+		var unknown = options.Where(option => !globalNames.Contains(option.Name) &&
+											!UndocumentedOptions.Contains(option.Name) &&
+											!chainOptions.Contains(option)).Select(option => option.Name).ToArray();
 		var missing = globalNames.Where(name => options.All(option => option.Name != name)).ToArray();
 
 		if (unknown.Length > 0)
@@ -102,8 +107,6 @@ public class DocumentationTests
 			   "Configuration-file keys, environment variables, and command-line options feed\n" +
 			   "the same configuration system. Environment variables use the `NBXPLORER_`\n" +
 			   "prefix. Run `NBXplorer --help` to inspect the deployed version directly.\n\n" +
-			   "The legacy configuration-only `mutinynet` boolean can be set as\n" +
-			   "`mutinynet=1` or `NBXPLORER_MUTINYNET=1`; prefer `network=mutinynet`.\n\n" +
 			   string.Join("\n\n", sections) + "\n\n" +
 			   "## Chain-specific node and RPC settings\n\n" +
 			   "Replace `<crypto>` with a lowercase code in command-line and configuration-file\n" +
@@ -173,7 +176,7 @@ public class DocumentationTests
 
 	private static string ConfigurationRow(ConfigurationOption option)
 	{
-		var configuration = option.Name == "help" ? "N/A" : $"`{ConfigurationKey(option.Name)}`";
+		var configuration = option.Name == "help" ? "N/A" : $"`{option.Name}`";
 		var environment = option.Name == "help" ? "N/A" : $"`NBXPLORER_{option.Name.ToUpperInvariant()}`";
 		return $"| `{EscapeCell(option.Syntax)}` | {configuration} | {environment} | {EscapeCell(option.Description)} |";
 	}
@@ -181,17 +184,6 @@ public class DocumentationTests
 	private static string ChainConfigurationRow(string suffix, string description)
 	{
 		return $"| `--<crypto>{suffix}` | `<crypto>.{ChainConfigurationKey(suffix)}` | `NBXPLORER_<CRYPTO>{suffix.ToUpperInvariant()}` | {EscapeCell(description)} |";
-	}
-
-	private static string ConfigurationKey(string name)
-	{
-		return name switch
-		{
-			"socksendpoint" => "socks.endpoint",
-			"socksuser" => "socks.user",
-			"sockspassword" => "socks.password",
-			_ => name
-		};
 	}
 
 	private static string ChainConfigurationKey(string suffix)
