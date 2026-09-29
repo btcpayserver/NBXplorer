@@ -42,8 +42,12 @@ public class DocumentationTests
 		if (generatedReference is not null &&
 			(!File.Exists(outputPath) || NormalizeLineEndings(File.ReadAllText(outputPath)) != generatedReference))
 		{
-			File.WriteAllText(outputPath, generatedReference);
-			errors.Add("docs/configuration-reference.md was stale and has been updated. Review and commit it, then rerun this test.");
+			var updateReference = Environment.GetEnvironmentVariable("UPDATE_CONFIGURATION_REFERENCE") == "1";
+			if (updateReference)
+				File.WriteAllText(outputPath, generatedReference);
+			errors.Add(updateReference
+				? "docs/configuration-reference.md was stale and has been updated. Review and commit it, then rerun this test."
+				: "docs/configuration-reference.md is stale. Set UPDATE_CONFIGURATION_REFERENCE=1 to update it, then rerun this test.");
 		}
 
 		Assert.True(errors.Count == 0, string.Join(Environment.NewLine, errors));

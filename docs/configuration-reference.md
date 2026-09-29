@@ -26,7 +26,7 @@ prefix. Run `NBXplorer --help` to inspect the deployed version directly.
 
 | Command line | Configuration file | Environment | Description |
 |---|---|---|---|
-| `--postgres` | `postgres` | `NBXPLORER_POSTGRES` | Use PostgresSQL backend. Set the connection string of the postgres backend (For example: "User ID=postgres;Host=postgres;Port=5432;Application Name=nbxplorer;Database=nbxplorer", more options on https://www.npgsql.org/doc/connection-string-parameters.html) |
+| `--postgres` | `postgres` | `NBXPLORER_POSTGRES` | Use PostgreSQL backend. Set the connection string of the postgres backend (For example: "User ID=postgres;Host=postgres;Port=5432;Application Name=nbxplorer;Database=nbxplorer", more options on https://www.npgsql.org/doc/connection-string-parameters.html) |
 
 ## HTTP and authentication
 

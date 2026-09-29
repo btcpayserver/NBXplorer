@@ -4050,7 +4050,7 @@
       "get": {
         "summary": "Get transactions for an address",
         "operationId": "ListAddressTransactions",
-        "description": "Retrieves transactions associated with the specified an address.",
+        "description": "Retrieves transactions associated with the specified address.",
         "tags": [
           "Addresses",
           "Transactions"
@@ -4105,7 +4105,7 @@
             }
           },
           "404": {
-            "description": "Derivation scheme not found.",
+            "description": "Address not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4114,7 +4114,7 @@
                 "example": {
                   "httpCode": 404,
                   "code": "request-error",
-                  "message": "Derivation scheme not found."
+                  "message": "Address not found."
                 }
               }
             }
@@ -4125,7 +4125,7 @@
     "/v1/cryptos/{cryptoCode}/addresses/{address}/transactions/{txId}": {
       "get": {
         "summary": "Get a transaction for an address",
-        "description": "Retrieves a transaction associated with the specified an address.",
+        "description": "Retrieves a transaction associated with the specified address.",
         "tags": [
           "Addresses",
           "Transactions"
@@ -4199,7 +4199,7 @@
     "/v1/cryptos/{cryptoCode}/groups/{groupId}/transactions/{txId}": {
       "get": {
         "summary": "Get a transaction for a group",
-        "description": "Retrieves a transaction associated with the specified a group.",
+        "description": "Retrieves a transaction associated with the specified group.",
         "tags": [
           "Groups",
           "Transactions"

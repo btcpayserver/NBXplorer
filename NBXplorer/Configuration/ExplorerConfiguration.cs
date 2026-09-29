@@ -194,7 +194,7 @@ namespace NBXplorer.Configuration
 			if (obsolete != string.Empty)
 			{
 				if (Directory.Exists(Path.Combine(DataDir, "db")))
-					throw new ConfigException($"Options '{obsolete}' are not supported anymore. Use NBXplorer v2.5.2 to migrate the DBTrie database to PostgreSQL, remove the obsolete migration options after it completes, then upgrade to the current version using the same PostgreSQL database.");
+					throw new ConfigException($"Options '{obsolete}' are not supported anymore. Run NBXplorer v2.5.2 with a PostgreSQL connection string and --automigrate as described at https://github.com/btcpayserver/NBXplorer/blob/v2.5.2/docs/Postgres-Migration.md, remove the obsolete migration options after it completes, then upgrade to the current version using the same PostgreSQL database.");
 				else
 					Logs.Explorer.LogWarning($"Options '{obsolete}' is obsolete and ignored...");
 			}

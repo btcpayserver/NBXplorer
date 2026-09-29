@@ -51,7 +51,7 @@ namespace NBXplorer.Configuration
 			app.Option("--noauth", $"Disable cookie authentication", CommandOptionType.BoolValue);
 			app.Option("--instancename", $"Define an instance name for this server that, if not null, will show in status response and in HTTP response headers (default: empty)", CommandOptionType.SingleValue);
 			app.Option("--exposerpc", $"Expose the node RPC through the REST API (default: false)", CommandOptionType.SingleValue);
-			app.Option("--postgres", $"Use PostgresSQL backend. Set the connection string of the postgres backend (For example: \"User ID=postgres;Host=postgres;Port=5432;Application Name=nbxplorer;Database=nbxplorer\", more options on https://www.npgsql.org/doc/connection-string-parameters.html)", CommandOptionType.SingleValue);
+			app.Option("--postgres", $"Use PostgreSQL backend. Set the connection string of the postgres backend (For example: \"User ID=postgres;Host=postgres;Port=5432;Application Name=nbxplorer;Database=nbxplorer\", more options on https://www.npgsql.org/doc/connection-string-parameters.html)", CommandOptionType.SingleValue);
 			app.Option("--socksendpoint", "Configure a SocksV5 endpoint as proxy to connect to P2P", CommandOptionType.SingleValue);
 			app.Option("--socksuser", "SocksV5 username credential", CommandOptionType.SingleValue);
 			app.Option("--sockspassword", "SocksV5 password credential", CommandOptionType.SingleValue);

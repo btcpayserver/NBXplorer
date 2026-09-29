@@ -132,7 +132,7 @@ See the [Npgsql connection string reference](https://www.npgsql.org/doc/connecti
 
 On its first run, NBXplorer starts scanning a chain from the configured `<chain>.startheight`. The default value, `-1`, uses the node's current blockchain height. Transactions before that height are not discovered automatically.
 
-To discover older transactions, stop NBXplorer and restart it with a suitable start height and the chain's rescan option. For example:
+To discover older transactions, first register the wallets or addresses while NBXplorer is running. Then stop NBXplorer and restart it with a suitable start height and the chain's rescan option so the rescan includes those tracked sources. For example:
 
 ```bash
 ./run.sh --chains=btc --btcstartheight=800000 --btcrescan
