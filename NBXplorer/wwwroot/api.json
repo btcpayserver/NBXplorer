@@ -208,7 +208,7 @@
       "TransactionResult": {
         "type": "object",
         "properties": {
-          "blockHash": {
+          "blockId": {
             "type": "string",
             "example": "7639350b31f3ce07ff976ebae772fef1602b30a10ccb8ca69047fe0fe8b9083c",
             "description": "The hash of the block containing this transaction. Will be `null` if the transaction is unconfirmed.",
@@ -225,7 +225,7 @@
             "example": 876593,
             "nullable": true
           },
-          "transactionId": {
+          "transactionHash": {
             "type": "string",
             "description": "The transaction ID.",
             "example": "14a679cd743f3d2aa51b998747c58dfa9b31c8c669006fc6c6efe4b4f5f76e5b"
@@ -1065,8 +1065,8 @@
             "transaction": "0200000001dd7f53b09438fed83abe25dd6cdc30ee2092ce8c855cb9e7b0faa38aba8bc0f500000000484730440220093a837ff4be4b64b2ed4625abb128966caad0cb7830cac7af4f615bbf6b52ce02206227a3ddec3fac9e49f414eeab1388d0e67829620ac3a8fb2f4bbfc5b67bd02901feffffff0200e1f5050000000017a91476de0c5d07fd202880672bc702162b7f18e13aca87640210240100000017a9147cfa038496438a6d3c95cfac990f4dffc6cb44f28768000000",
             "height": null,
             "timestamp": 1540434424,
-            "blockHash": null,
-            "transactionId": "f135537b40ac7a524273176b60e464b7f279f622031ec53af302d959966d7364"
+            "blockId": null,
+            "transactionHash": "f135537b40ac7a524273176b60e464b7f279f622031ec53af302d959966d7364"
           },
           "inputs": [
             {
@@ -1353,51 +1353,49 @@
           }
         },
         "required": [
-          "jsonrpc",
-          "method",
-          "params"
+          "method"
         ]
       },
       "RpcResponse": {
-        "type": "object",
-        "properties": {
-          "error": {
+        "oneOf": [
+          {
             "type": "object",
-            "nullable": true,
-            "description": "Error information if the RPC call failed.",
             "properties": {
-              "code": {
-                "type": "integer",
-                "description": "Error code."
-              },
-              "message": {
-                "type": "string",
-                "description": "Error message."
+              "result": {
+                "description": "The result of the RPC call. The structure depends on the method called."
               }
-            }
+            },
+            "required": [
+              "result"
+            ]
           },
-          "result": {
-            "description": "The result of the RPC call. The structure depends on the method called."
-          },
-          "resultString": {
-            "type": "string",
-            "description": "String representation of the result (if any).",
-            "nullable": true
-          },
-          "id": {
-            "description": "An identifier established by the client.",
-            "example": "1",
-            "anyOf": [
-              {
-                "type": "string",
-                "nullable": true
-              },
-              {
-                "type": "integer"
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "description": "Error information returned by the node.",
+                "properties": {
+                  "code": {
+                    "type": "integer",
+                    "description": "Error code."
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Error message."
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ]
               }
+            },
+            "required": [
+              "error"
             ]
           }
-        }
+        ]
       }
     }
   },
@@ -3101,63 +3099,6 @@
         "operationId": "GetGroupUTXOs"
       }
     },
-    "/v1/groups/{groupId}/metadata/{key}": {
-      "post": {
-        "summary": "Attach metadata to a group",
-        "tags": [
-          "Groups"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/GroupId"
-          },
-          {
-            "$ref": "#/components/parameters/MetadataKey"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Metadata attached successfully"
-          }
-        },
-        "operationId": "SetGroupMetadata"
-      },
-      "get": {
-        "summary": "Retrieve metadata from a group",
-        "tags": [
-          "Groups"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/GroupId"
-          },
-          {
-            "$ref": "#/components/parameters/MetadataKey"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Metadata retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "404": {
-            "description": "Key not found"
-          }
-        },
-        "operationId": "GetGroupMetadata"
-      }
-    },
     "/v1/cryptos/{cryptoCode}/derivations/{derivationScheme}/metadata/{key}": {
       "post": {
         "summary": "Attach metadata to a derivation scheme",
@@ -3811,7 +3752,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RpcRequest"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RpcRequest"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/RpcRequest"
+                    }
+                  }
+                ]
               },
               "example": {
                 "jsonrpc": "1.0",
@@ -3823,11 +3774,21 @@
         },
         "responses": {
           "200": {
-            "description": "Successful RPC call.",
+            "description": "RPC result or node RPC error. Node errors are returned with HTTP 200.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RpcResponse"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RpcResponse"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RpcResponse"
+                      }
+                    }
+                  ]
                 },
                 "example": {
                   "result": {
@@ -3844,33 +3805,28 @@
                     "pruned": false,
                     "softforks": [],
                     "warnings": ""
-                  },
-                  "error": null,
-                  "id": null
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request. Invalid RPC method or parameters.",
+            "description": "The node RPC interface is currently unavailable.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RpcResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "result": null,
-                  "error": {
-                    "code": -32601,
-                    "message": "Method not found"
-                  },
-                  "id": null
+                  "httpCode": 400,
+                  "code": "rpc-unavailable",
+                  "message": "The RPC interface is currently not available."
                 }
               }
             }
           },
           "401": {
-            "description": "JSON RPC Not Exposed. Code: `json-rpc-not-exposed`",
+            "description": "JSON RPC is not exposed and the requested method is not whitelisted.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3878,8 +3834,23 @@
                 },
                 "example": {
                   "httpCode": 401,
-                  "code": "request-error",
-                  "message": "Unauthorized"
+                  "code": "json-rpc-not-exposed",
+                  "message": "JSON-RPC is not configured to be exposed."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request body does not contain a JSON-RPC request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "httpCode": 422,
+                  "code": "no-json-rpc-request",
+                  "message": "A JSON-RPC request was not provided in the body."
                 }
               }
             }

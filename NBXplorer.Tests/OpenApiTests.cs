@@ -76,6 +76,37 @@ public class OpenApiTests
 		Assert.Empty(document["paths"]!["/health"]!["get"]!["security"]!);
 	}
 
+	[Fact]
+	public void OpenApiMatchesRuntimeContracts()
+	{
+		var document = LoadDocument();
+		Assert.Null(document["paths"]!["/v1/groups/{groupId}/metadata/{key}"]);
+
+		var transactionResult = (JObject)document["components"]!["schemas"]!["TransactionResult"]!["properties"]!;
+		var serializedProperties = typeof(global::NBXplorer.Models.TransactionResult).GetProperties()
+			.Select(property => char.ToLowerInvariant(property.Name[0]) + property.Name[1..])
+			.ToHashSet();
+		Assert.True(serializedProperties.SetEquals(transactionResult.Properties().Select(property => property.Name)),
+			"TransactionResult schema properties do not match the serialized model.");
+
+		var transactionExample = document["components"]!["schemas"]!["NewTransactionEvent"]!["example"]!["transactionData"]!;
+		Assert.NotNull(transactionExample["blockId"]);
+		Assert.NotNull(transactionExample["transactionHash"]);
+		Assert.Null(transactionExample["blockHash"]);
+		Assert.Null(transactionExample["transactionId"]);
+
+		var rpcOperation = document["paths"]!["/v1/cryptos/{cryptoCode}/rpc"]!["post"]!;
+		Assert.Equal(2, rpcOperation["requestBody"]!["content"]!["application/json"]!["schema"]!["oneOf"]!.Count());
+		Assert.Equal(["method"], document["components"]!["schemas"]!["RpcRequest"]!["required"]!.Values<string>().ToArray());
+		Assert.Equal(["200", "400", "401", "422"], rpcOperation["responses"]!.Children<JProperty>().Select(response => response.Name).ToArray());
+		Assert.Equal("rpc-unavailable", rpcOperation["responses"]!["400"]!["content"]!["application/json"]!["example"]!.Value<string>("code"));
+		Assert.Equal("json-rpc-not-exposed", rpcOperation["responses"]!["401"]!["content"]!["application/json"]!["example"]!.Value<string>("code"));
+		Assert.Equal("no-json-rpc-request", rpcOperation["responses"]!["422"]!["content"]!["application/json"]!["example"]!.Value<string>("code"));
+		var rpcResponse = document["components"]!["schemas"]!["RpcResponse"]!;
+		Assert.Equal(2, rpcResponse["oneOf"]!.Count());
+		Assert.Null(rpcResponse["properties"]);
+	}
+
 	private static IEnumerable<string> GetControllerRoutes(Type controller)
 	{
 		var controllerTemplates = controller.GetCustomAttributes<RouteAttribute>()
