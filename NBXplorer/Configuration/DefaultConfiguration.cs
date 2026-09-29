@@ -32,13 +32,13 @@ namespace NBXplorer.Configuration
 				app.Option($"--{crypto}rescan", $"Rescan from startheight", CommandOptionType.BoolValue);
 				app.Option($"--{crypto}rescaniftimebefore", $"Only perform rescan if before timestamp (UTC unix timestamp in seconds) (requires --{crypto}rescan)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}rpcuser", $"RPC authentication method 1: The RPC user (default: using cookie auth from default network folder)", CommandOptionType.SingleValue);
-				app.Option($"--{crypto}rpcdefaultwallet", $"The default RPC wallet used by NBXplorer. RPC wallet features aren't strictly needed, only for NBXplorer wallet created with `importKeysToRPC` (default: empty name)", CommandOptionType.SingleValue);
+				app.Option($"--{crypto}rpcdefaultwallet", $"The wallet context to use for node RPC requests (default: no wallet context)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}rpcpassword", $"RPC authentication method 1: The RPC password (default: using cookie auth from default network folder)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}rpccookiefile", $"RPC authentication method 2: The RPC cookiefile (default: using cookie auth from default network folder)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}rpcauth", $"RPC authentication method 3: user:password or cookiefile=path (default: using cookie auth from default network folder)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}rpcurl", $"The RPC server url (default: default rpc server depended on the network)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}startheight", $"The height where starting the scan (default: where your rpc server was synched when you first started this program)", CommandOptionType.SingleValue);
-				app.Option($"--{crypto}minutxovalue", $"The minimum value of tracked UTXOs, any UTXO with value less than this is ignored. (default: 1 (satoshi))", CommandOptionType.SingleValue);
+				app.Option($"--{crypto}minutxovalue", $"The minimum value of tracked UTXOs in satoshis; lower-value UTXOs are ignored (default: -1, disabled)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}nodeendpoint", $"The p2p connection to a Bitcoin node, make sure you are whitelisted (default: default p2p node on localhost, depends on network)", CommandOptionType.SingleValue);
 				app.Option($"--{crypto}exposerpc", $"Expose the node RPCs through the REST API (default: false)", CommandOptionType.SingleValue);
 			}
@@ -50,13 +50,13 @@ namespace NBXplorer.Configuration
 			app.Option("--signalfilesdir", $"The directory where files signaling if a chain is ready is created (default: the network specific datadir)", CommandOptionType.SingleValue);
 			app.Option("--noauth", $"Disable cookie authentication", CommandOptionType.BoolValue);
 			app.Option("--instancename", $"Define an instance name for this server that, if not null, will show in status response and in HTTP response headers (default: empty)", CommandOptionType.SingleValue);
-			app.Option("--rpcnotest", $"Faster start because RPC connection testing skipped (default: false)", CommandOptionType.SingleValue);
+			app.Option("--rpcnotest", $"Deprecated; this option has no effect", CommandOptionType.SingleValue);
 			app.Option("--exposerpc", $"Expose the node RPC through the REST API (default: false)", CommandOptionType.SingleValue);
 			app.Option("--postgres", $"Use PostgresSQL backend. Set the connection string of the postgres backend (For example: \"User ID=postgres;Host=postgres;Port=5432;Application Name=nbxplorer;Database=nbxplorer\", more options on https://www.npgsql.org/doc/connection-string-parameters.html)", CommandOptionType.SingleValue);
 			app.Option("--socksendpoint", "Configure a SocksV5 endpoint as proxy to connect to P2P", CommandOptionType.SingleValue);
 			app.Option("--socksuser", "SocksV5 username credential", CommandOptionType.SingleValue);
 			app.Option("--sockspassword", "SocksV5 password credential", CommandOptionType.SingleValue);
-			app.Option("-v | --verbose", $"Verbose logs (default: true)", CommandOptionType.SingleValue);
+			app.Option("-v | --verbose", $"Verbose logs (default: false)", CommandOptionType.SingleValue);
 			return app;
 		}
 

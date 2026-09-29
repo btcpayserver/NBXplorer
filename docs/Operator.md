@@ -84,7 +84,7 @@ dotnet NBXplorer.dll --help
 
 ## Configuration
 
-NBXplorer accepts settings from command-line arguments, environment variables, or a configuration file. Run `./run.sh --help` or `./run.ps1 --help` for the current option list.
+NBXplorer accepts settings from command-line arguments, environment variables, or a configuration file. See the [configuration reference](configuration-reference.md) for every supported setting and run `./run.sh --help` or `./run.ps1 --help` to verify the options in the version you deploy.
 
 The same setting can be expressed in each form:
 
