@@ -14,6 +14,7 @@ namespace NBXplorer
 			InitLitecoin(networkType);
 			InitDogecoin(networkType);
 			InitPepecoin(networkType);
+			InitDigiByte(networkType);
 			InitBCash(networkType);
 			InitGroestlcoin(networkType);
 			InitBGold(networkType);

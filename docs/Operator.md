@@ -152,6 +152,7 @@ Bitcoin is NBXplorer's primary supported chain. The server also contains network
 * Chaincoin
 * ColossusXT
 * Dash
+* DigiByte
 * Dogecoin
 * Feathercoin
 * GoByte
