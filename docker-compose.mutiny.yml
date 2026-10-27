@@ -23,8 +23,8 @@ services:
     - "43782"
     - "39388"
     ports:
-      - "43782:43782"
-      - "39388:39388"
+      - "127.0.0.1:43782:43782"
+      - "127.0.0.1:39388:39388"
     volumes:
     - "bitcoin_datadir:/data"
   
@@ -35,7 +35,7 @@ services:
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "39383:5432"
+      - "127.0.0.1:39383:5432"
     expose:
       - "5432"
   

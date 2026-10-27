@@ -4,7 +4,7 @@ services:
   nbxplorer:
     restart: always
     ports: 
-      - 32838:32838
+      - 127.0.0.1:32838:32838
     build:
       context: .
     environment:
@@ -39,8 +39,8 @@ services:
     - "43782"
     - "39388"
     ports:
-      - "43782:43782"
-      - "39388:39388"
+      - "127.0.0.1:43782:43782"
+      - "127.0.0.1:39388:39388"
     volumes:
     - "bitcoin_datadir:/data"
       
@@ -69,8 +69,8 @@ services:
       - "19332"
       - "19444"
     ports:
-      - "19332:19332"
-      - "19444:19444"
+      - "127.0.0.1:19332:19332"
+      - "127.0.0.1:19444:19444"
     volumes:
       - "elementsd_liquid_datadir:/data"
     

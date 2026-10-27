@@ -23,7 +23,7 @@ services:
     environment:
         POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "39383:5432"
+      - "127.0.0.1:39383:5432"
     expose:
       - "5432"
   pgadmin:
@@ -32,7 +32,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: "test@test.com"
       PGADMIN_DEFAULT_PASSWORD: "a"
     ports:
-      - "8484:80"
+      - "127.0.0.1:8484:80"
     expose:
       - "5432"
     depends_on:
