@@ -16,7 +16,7 @@ prefix. Run `NBXplorer --help` to inspect the deployed version directly.
 |---|---|---|---|
 | `-? \| -h \| --help` | N/A | N/A | Show help information |
 | `-n \| --network` | `network` | `NBXPLORER_NETWORK` | Set the network among (mainnet,testnet,regtest,signet) (default: mainnet) |
-| `--chains` | `chains` | `NBXPLORER_CHAINS` | Chains to support comma separated (default: btc, available: agm,btc,btx,ltc,doge,pepe,bch,grs,btg,dash,trc,polis,mona,ftc,ufo,via,xmcc,gbx,colx,chc,lbtc,qtum,html,mue) |
+| `--chains` | `chains` | `NBXPLORER_CHAINS` | Chains to support comma separated (default: btc, available: agm,btc,btx,ltc,doge,pepe,dgb,bch,grs,btg,dash,trc,polis,mona,ftc,ufo,via,xmcc,gbx,colx,chc,lbtc,qtum,html,mue) |
 | `-c \| --conf` | `conf` | `NBXPLORER_CONF` | The configuration file |
 | `-p \| --port` | `port` | `NBXPLORER_PORT` | The port on which to listen |
 | `-b \| --bind` | `bind` | `NBXPLORER_BIND` | The address on which to bind |
@@ -61,7 +61,7 @@ variables. For example, Bitcoin's RPC URL is `--btcrpcurl`, `btc.rpc.url`,
 or `NBXPLORER_BTCRPCURL`. The `minutxovalue` setting does not apply to
 Liquid (`LBTC`).
 
-Supported codes in this build: `AGM`, `BTC`, `BTX`, `LTC`, `DOGE`, `PEPE`, `BCH`, `GRS`, `BTG`, `DASH`, `TRC`, `POLIS`, `MONA`, `FTC`, `UFO`, `VIA`, `XMCC`, `GBX`, `COLX`, `CHC`, `LBTC`, `QTUM`, `HTML`, `MUE`.
+Supported codes in this build: `AGM`, `BTC`, `BTX`, `LTC`, `DOGE`, `PEPE`, `DGB`, `BCH`, `GRS`, `BTG`, `DASH`, `TRC`, `POLIS`, `MONA`, `FTC`, `UFO`, `VIA`, `XMCC`, `GBX`, `COLX`, `CHC`, `LBTC`, `QTUM`, `HTML`, `MUE`.
 
 | Command line | Configuration file | Environment | Description |
 |---|---|---|---|
