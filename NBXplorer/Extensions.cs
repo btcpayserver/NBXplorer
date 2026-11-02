@@ -56,7 +56,7 @@ namespace NBXplorer
 			{
 				await conn.OpenAsync(cancellationToken);
 			}
-			catch (PostgresException ex) when (!cancellationToken.IsCancellationRequested && ex.IsTransient && retries > 0)
+			catch (NpgsqlException ex) when (!cancellationToken.IsCancellationRequested && ex.IsTransient && retries > 0)
 			{
 				retries--;
 				await conn.DisposeAsync();
