@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -18,7 +19,7 @@ namespace NBXplorer
 {
 	public class Program
 	{
-		public static async Task Main(string[] args)
+		public static async Task<int> Main(string[] args)
 		{
 			ExtPubKey.SkipInvalidMasterExtPubKeyCheck = true;
 			var version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
@@ -31,7 +32,7 @@ namespace NBXplorer
 			{
 				var conf = new DefaultConfiguration() { Logger = Logs.Configuration }.CreateConfiguration(args);
 				if (conf == null)
-					return;
+					return 0;
 
 				// Sanity check of the config, this is not strictly needed as it would happen down the line when the host is built
 				// However, a bug in .NET Core fixed in 2.1 will prevent the app from stopping if an exception is thrown by the host
@@ -68,24 +69,33 @@ namespace NBXplorer
 					logger.LogInformation("Now listening on: " + url);
 				}
 				await host.WaitForShutdownAsync();
+				return 0;
 			}
 			catch (ConfigException ex)
 			{
 				if (!string.IsNullOrEmpty(ex.Message))
 					Logs.Configuration.LogError(ex.Message);
+				return 1;
 			}
 			catch (CommandParsingException parsing)
 			{
 				Logs.Explorer.LogError(parsing.HelpText + "\r\n" + parsing.Message);
+				return 1;
 			}
-			catch (TaskCanceledException)
+			catch (OperationCanceledException) when (host?.Services.GetService<IHostApplicationLifetime>()?.ApplicationStopping.IsCancellationRequested == true)
 			{
+				return 0;
+			}
+			catch (Exception ex)
+			{
+				Logs.Explorer.LogError(ex, "NBXplorer stopped because of an unexpected error");
+				return 1;
 			}
 			finally
 			{
-				processor.Dispose();
 				if (host != null)
 					host.Dispose();
+				processor.Dispose();
 			}
 		}
 

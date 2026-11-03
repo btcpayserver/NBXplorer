@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NBXplorer.Backend;
 using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -28,29 +29,44 @@ namespace NBXplorer.HostedServices
 		{
 			Logger.LogInformation("Postgres services activated");
 			var dsBuilder = ConnectionFactory.CreateDataSourceBuilder(b => b.CommandTimeout = Constants.TenHours);
-			retry:
-			try
+			var retryDelay = 0;
+			while (true)
 			{
-				await using var ds = dsBuilder.Build();
-				using var conn = await ds.ReliableOpenConnectionAsync(cancellationToken);
-				await RunScripts(conn);
-			}
-			catch (Npgsql.NpgsqlException pgex) when (pgex.SqlState == PostgresErrorCodes.InvalidCatalogName)
-			{
-				string dbname = string.Empty;
-				await using var ds = ConnectionFactory.CreateDataSourceBuilder(b =>
+				cancellationToken.ThrowIfCancellationRequested();
+				try
 				{
-					dbname = b.Database;
-					Logger.LogInformation($"Database '{dbname}' doesn't exists, creating it...");
-					b.Database = null;
-				}).Build();
-				using var conn = await ds.ReliableOpenConnectionAsync(cancellationToken);
-				await conn.ExecuteAsync($"CREATE DATABASE {dbname} TEMPLATE 'template0' LC_CTYPE 'C' LC_COLLATE 'C' ENCODING 'UTF8'");
-				goto retry;
+					try
+					{
+						await using var ds = dsBuilder.Build();
+						await using var conn = await ds.OpenConnectionAsync(cancellationToken);
+						await RunScripts(conn, cancellationToken);
+						return;
+					}
+					catch (NpgsqlException pgex) when (pgex.SqlState == PostgresErrorCodes.InvalidCatalogName)
+					{
+						string dbname = string.Empty;
+						await using var ds = ConnectionFactory.CreateDataSourceBuilder(b =>
+						{
+							dbname = b.Database;
+							Logger.LogInformation($"Database '{dbname}' doesn't exists, creating it...");
+							b.Database = null;
+						}).Build();
+						await using var conn = await ds.OpenConnectionAsync(cancellationToken);
+						await conn.ExecuteAsync(new CommandDefinition($"CREATE DATABASE {dbname} TEMPLATE 'template0' LC_CTYPE 'C' LC_COLLATE 'C' ENCODING 'UTF8'", cancellationToken: cancellationToken));
+					}
+				}
+				catch (NpgsqlException ex) when (ex.IsTransient && !cancellationToken.IsCancellationRequested)
+				{
+					retryDelay = Math.Min(retryDelay + 1, 5);
+					Logger.LogWarning("Waiting for Postgres ({Host}:{Port}): {Message}. Retrying in {Delay} seconds",
+						dsBuilder.ConnectionStringBuilder.Host, dsBuilder.ConnectionStringBuilder.Port,
+						ex.GetBaseException().Message, retryDelay);
+					await Task.Delay(TimeSpan.FromSeconds(retryDelay), cancellationToken);
+				}
 			}
 		}
 
-		private async Task RunScripts(NpgsqlConnection conn)
+		private async Task RunScripts(NpgsqlConnection conn, CancellationToken cancellationToken)
 		{
 			await using (conn)
 			{
@@ -60,7 +76,7 @@ namespace NBXplorer.HostedServices
 				HashSet<string> executed;
 				try
 				{
-					executed = (await conn.QueryAsync<string>("SELECT script_name FROM nbxv1_migrations")).ToHashSet();
+					executed = (await conn.QueryAsync<string>(new CommandDefinition("SELECT script_name FROM nbxv1_migrations", cancellationToken: cancellationToken))).ToHashSet();
 				}
 				catch (Npgsql.NpgsqlException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedTable)
 				{
@@ -90,9 +106,9 @@ namespace NBXplorer.HostedServices
 						content = reader.ReadToEnd();
 					}
 					Logger.LogInformation($"Execute script {scriptName}...");
-					await conn.ExecuteAsync($"{content}; INSERT INTO nbxv1_migrations VALUES (@scriptName)", new { scriptName });
+					await conn.ExecuteAsync(new CommandDefinition($"{content}; INSERT INTO nbxv1_migrations VALUES (@scriptName)", new { scriptName }, cancellationToken: cancellationToken));
 				}
-				await conn.ReloadTypesAsync();
+				await conn.ReloadTypesAsync(cancellationToken);
 			}
 		}
 
