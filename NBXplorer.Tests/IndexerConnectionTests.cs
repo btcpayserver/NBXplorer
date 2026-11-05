@@ -132,9 +132,9 @@ namespace NBXplorer.Tests
 			var connecting = indexer.ConnectNode(CancellationToken.None);
 
 			var finished = await Task.WhenAny(connecting, Task.Delay(TimeSpan.FromSeconds(10)));
-			indexer._Connection?.Dispose();
 			Assert.Same(connecting, finished);
 			await Assert.ThrowsAsync<TimeoutException>(() => connecting);
+			Assert.False(indexer._Connection.Node.IsConnected);
 		}
 	}
 }

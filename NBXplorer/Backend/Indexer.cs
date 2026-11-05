@@ -305,7 +305,15 @@ namespace NBXplorer.Backend
 				_Connection = new Connection(node);
 				Logger.LogInformation($"TCP Connection succeed, handshaking...");
 				// The sends inside the handshake can't be cancelled, so the timeout has to wrap the whole task.
-				await node.VersionHandshakeAsync(handshakeTimeout.Token).WaitAsync(HandshakeTimeout, token);
+				try
+				{
+					await node.VersionHandshakeAsync(handshakeTimeout.Token).WaitAsync(HandshakeTimeout, token);
+				}
+				catch (TimeoutException)
+				{
+					_Connection.Dispose("Handshake timed out");
+					throw;
+				}
 				Logger.LogInformation($"Handshaked");
 				await node.SendMessageAsync(new SendHeadersPayload());
 
