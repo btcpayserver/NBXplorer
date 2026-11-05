@@ -113,7 +113,7 @@ namespace NBXplorer.Backend
 			}
 		}
 
-		class Connection : IDisposable
+		internal class Connection : IDisposable
 		{
 			public Channel<Object> Events;
 			public Channel<Block> Blocks;
@@ -140,7 +140,8 @@ namespace NBXplorer.Backend
 				_Disposed = true;
 			}
 		}
-		Connection _Connection;
+		internal Connection _Connection;
+		internal TimeSpan HandshakeTimeout { get; set; } = TimeSpan.FromMinutes(1.0);
 		private async Task IndexerLoopCore(CancellationToken token)
 		{
 			await ConnectNode(token);
@@ -276,7 +277,7 @@ namespace NBXplorer.Backend
 		}
 
 
-		private async Task ConnectNode(CancellationToken token)
+		internal async Task ConnectNode(CancellationToken token)
 		{
 			State = BitcoinDWaiterState.NotStarted;
 			using (var handshakeTimeout = CancellationTokenSource.CreateLinkedTokenSource(token))
@@ -303,7 +304,8 @@ namespace NBXplorer.Backend
 				_Connection?.Dispose("Creating new connection");
 				_Connection = new Connection(node);
 				Logger.LogInformation($"TCP Connection succeed, handshaking...");
-				await node.VersionHandshakeAsync(handshakeTimeout.Token);
+				// The sends inside the handshake can't be cancelled, so the timeout has to wrap the whole task.
+				await node.VersionHandshakeAsync(handshakeTimeout.Token).WaitAsync(HandshakeTimeout, token);
 				Logger.LogInformation($"Handshaked");
 				await node.SendMessageAsync(new SendHeadersPayload());
 
@@ -555,7 +557,7 @@ namespace NBXplorer.Backend
 			}
 		}
 
-		private void Node_Disconnected(Node node)
+		internal void Node_Disconnected(Node node)
 		{
 			if (node.DisconnectReason.Exception != null)
 			{
@@ -565,9 +567,13 @@ namespace NBXplorer.Backend
 			{
 				Logger.LogInformation($"Node disconnected ({node.DisconnectReason.Reason})");
 			}
-			_Connection?.Dispose();
 			node.MessageReceived -= Node_MessageReceived;
 			node.Disconnected -= Node_Disconnected;
+			// This event is raised after ConnectNode replaced the connection, so it may be about the old node.
+			var connection = _Connection;
+			if (connection?.Node != node)
+				return;
+			connection.Dispose();
 			State = BitcoinDWaiterState.NotStarted;
 		}
 
