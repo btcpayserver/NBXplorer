@@ -303,7 +303,16 @@ namespace NBXplorer.Backend
 				_Connection?.Dispose("Creating new connection");
 				_Connection = new Connection(node);
 				Logger.LogInformation($"TCP Connection succeed, handshaking...");
-				await node.VersionHandshakeAsync(handshakeTimeout.Token);
+				handshakeTimeout.CancelAfter(TimeSpan.FromMinutes(1.0));
+				try
+				{
+					await node.VersionHandshakeAsync(handshakeTimeout.Token);
+				}
+				catch (OperationCanceledException)
+				{
+					_Connection.Dispose("Handshake cancelled");
+					throw;
+				}
 				Logger.LogInformation($"Handshaked");
 				await node.SendMessageAsync(new SendHeadersPayload());
 
@@ -565,9 +574,13 @@ namespace NBXplorer.Backend
 			{
 				Logger.LogInformation($"Node disconnected ({node.DisconnectReason.Reason})");
 			}
-			_Connection?.Dispose();
 			node.MessageReceived -= Node_MessageReceived;
 			node.Disconnected -= Node_Disconnected;
+			// This event is raised after ConnectNode replaced the connection, so it may be about the old node.
+			var connection = _Connection;
+			if (connection?.Node != node)
+				return;
+			connection.Dispose();
 			State = BitcoinDWaiterState.NotStarted;
 		}
 
