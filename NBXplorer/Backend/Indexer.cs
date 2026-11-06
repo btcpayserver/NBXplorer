@@ -113,7 +113,7 @@ namespace NBXplorer.Backend
 			}
 		}
 
-		internal class Connection : IDisposable
+		class Connection : IDisposable
 		{
 			public Channel<Object> Events;
 			public Channel<Block> Blocks;
@@ -140,8 +140,7 @@ namespace NBXplorer.Backend
 				_Disposed = true;
 			}
 		}
-		internal Connection _Connection;
-		internal TimeSpan HandshakeTimeout { get; set; } = TimeSpan.FromMinutes(1.0);
+		Connection _Connection;
 		private async Task IndexerLoopCore(CancellationToken token)
 		{
 			await ConnectNode(token);
@@ -277,7 +276,7 @@ namespace NBXplorer.Backend
 		}
 
 
-		internal async Task ConnectNode(CancellationToken token)
+		private async Task ConnectNode(CancellationToken token)
 		{
 			State = BitcoinDWaiterState.NotStarted;
 			using (var handshakeTimeout = CancellationTokenSource.CreateLinkedTokenSource(token))
@@ -304,14 +303,14 @@ namespace NBXplorer.Backend
 				_Connection?.Dispose("Creating new connection");
 				_Connection = new Connection(node);
 				Logger.LogInformation($"TCP Connection succeed, handshaking...");
-				// The sends inside the handshake can't be cancelled, so the timeout has to wrap the whole task.
+				handshakeTimeout.CancelAfter(TimeSpan.FromMinutes(1.0));
 				try
 				{
-					await node.VersionHandshakeAsync(handshakeTimeout.Token).WaitAsync(HandshakeTimeout, token);
+					await node.VersionHandshakeAsync(handshakeTimeout.Token);
 				}
-				catch (TimeoutException)
+				catch (OperationCanceledException)
 				{
-					_Connection.Dispose("Handshake timed out");
+					_Connection.Dispose("Handshake cancelled");
 					throw;
 				}
 				Logger.LogInformation($"Handshaked");
@@ -565,7 +564,7 @@ namespace NBXplorer.Backend
 			}
 		}
 
-		internal void Node_Disconnected(Node node)
+		private void Node_Disconnected(Node node)
 		{
 			if (node.DisconnectReason.Exception != null)
 			{
