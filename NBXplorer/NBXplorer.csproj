@@ -35,12 +35,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="Dapper" Version="2.1.89" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
 	  <PackageReference Include="NicolasDorier.CommandLine" Version="2.0.0" />
 	  <PackageReference Include="NicolasDorier.CommandLine.Configuration" Version="2.0.0" />
 	<PackageReference Include="NicolasDorier.StandardConfiguration" Version="2.0.1" />
-	<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.14" />
+	<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="11.0.0" />
     <ProjectReference Include="..\NBXplorer.Client\NBXplorer.Client.csproj" />
   </ItemGroup>
 
