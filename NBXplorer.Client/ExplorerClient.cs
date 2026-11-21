@@ -338,6 +338,31 @@ namespace NBXplorer
 		{
 			return SendAsync<GetBalanceResponse>(HttpMethod.Get, null, $"{GetBasePath(trackedSource)}/balance", cancellation);
 		}
+
+		public Task<GetAddressesResponse> GetAddressPageAsync(TrackedSource trackedSource, int pageSize = 100, string continuation = null, CancellationToken cancellation = default)
+		{
+			if (trackedSource == null)
+				throw new ArgumentNullException(nameof(trackedSource));
+			var path = $"{GetBasePath(trackedSource)}/addresses?limit={pageSize}";
+			if (continuation != null)
+				path += $"&continuation={Uri.EscapeDataString(continuation)}";
+			return SendAsync<GetAddressesResponse>(HttpMethod.Get, null, $"{Raw(path)}", cancellation);
+		}
+
+		public async IAsyncEnumerable<BitcoinAddress> GetAddressesAsync(
+			TrackedSource trackedSource,
+			int pageSize = 100,
+			[EnumeratorCancellation] CancellationToken cancellation = default)
+		{
+			string continuation = null;
+			do
+			{
+				var page = await GetAddressPageAsync(trackedSource, pageSize, continuation, cancellation).ConfigureAwait(false);
+				foreach (var address in page.Addresses)
+					yield return address;
+				continuation = page.Continuation;
+			} while (continuation != null);
+		}
 		public async Task<bool> IsTrackedAsync(TrackedSource trackedSource, CancellationToken cancellation = default)
 		{
 			
